@@ -3,3 +3,6 @@ node_modules
 .yarn/
 .dev.vars
 *.dev.vars
+.tsbuild/
+.wrangler/
+dist/

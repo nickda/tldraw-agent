@@ -14,6 +14,7 @@ import { AgentHelpers } from '../AgentHelpers'
 import { getModeNode } from '../modes/AgentModeChart'
 import { AgentModeType } from '../modes/AgentModeDefinitions'
 import { getPromptPartUtilsRecord, PromptPartUtil } from '../parts/PromptPartUtil'
+import { extractFairyPosition } from '../utils/fairyPosition'
 import { AgentActionManager } from './managers/AgentActionManager'
 import { AgentChatManager } from './managers/AgentChatManager'
 import { AgentChatOriginManager } from './managers/AgentChatOriginManager'
@@ -624,6 +625,13 @@ export class TldrawAgent {
 								const transformedAction = actionUtil.sanitizeAction(action, helpers)
 								if (!transformedAction) {
 									return
+								}
+
+								const fairyPosition = extractFairyPosition(transformedAction, (position) =>
+									helpers.removeOffsetFromVec(position)
+								)
+								if (fairyPosition) {
+									this.requests.setFairyPosition(fairyPosition)
 								}
 
 								// Apply the action to the app and editor
