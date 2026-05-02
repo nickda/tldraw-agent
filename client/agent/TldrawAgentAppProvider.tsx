@@ -86,10 +86,10 @@ export const TldrawAgentAppProvider = memo(function TldrawAgentAppProvider({
 		const defaultAgent = instance.agents.ensureAtLeastOneAgent()
 
 		// Seed any agents that don't yet have a Fairy position so they render immediately.
-		const defaultFairyPosition = getDefaultFairySpawnPosition(editor.getViewportPageBounds())
-		instance.agents.getAgents().forEach((agent) => {
+		const viewportBounds = editor.getViewportPageBounds()
+		instance.agents.getAgents().forEach((agent, index) => {
 			if (!agent.requests.getFairyPosition()) {
-				agent.requests.setFairyPosition(defaultFairyPosition)
+				agent.requests.setFairyPosition(getDefaultFairySpawnPosition(viewportBounds, index))
 			}
 		})
 

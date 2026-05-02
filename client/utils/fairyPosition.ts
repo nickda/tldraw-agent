@@ -4,15 +4,31 @@ import { Streaming } from '../../shared/types/Streaming'
 
 export type FairyPosition = { x: number; y: number }
 
-export function getDefaultFairySpawnPosition(viewportBounds: {
+export function getDefaultFairySpawnPosition(
+	viewportBounds: {
 	x: number
 	y: number
 	w: number
 	h: number
-}): FairyPosition {
-	return {
+},
+	index = 0
+): FairyPosition {
+	const center = {
 		x: viewportBounds.x + viewportBounds.w / 2,
 		y: viewportBounds.y + viewportBounds.h / 2,
+	}
+
+	if (index === 0) {
+		return center
+	}
+
+	const spawnIndex = index - 1
+	const radius = 80 + Math.floor(spawnIndex / 4) * 48
+	const angle = (spawnIndex % 4) * (Math.PI / 2)
+
+	return {
+		x: center.x + Math.cos(angle) * radius,
+		y: center.y + Math.sin(angle) * radius,
 	}
 }
 

@@ -223,4 +223,24 @@ describe('getDefaultFairySpawnPosition', () => {
 			})
 		).toEqual({ x: 140, y: 140 })
 	})
+
+	test('spreads later spawn positions around the center', () => {
+		expect(
+			getDefaultFairySpawnPosition({
+				x: 40,
+				y: 80,
+				w: 200,
+				h: 120,
+			}, 1)
+		).toEqual({ x: 220, y: 140 })
+
+		expect(
+			getDefaultFairySpawnPosition({
+				x: 40,
+				y: 80,
+				w: 200,
+				h: 120,
+			}, 2)
+		).toEqual({ x: 140, y: 220 })
+	})
 })
