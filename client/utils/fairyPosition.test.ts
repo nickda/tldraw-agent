@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { extractFairyPosition } from './fairyPosition'
+import { extractFairyPosition, getDefaultFairySpawnPosition } from './fairyPosition'
 
 describe('extractFairyPosition', () => {
 	const normalizeFromChatOrigin = ({ x, y }: { x: number; y: number }) => ({
@@ -209,5 +209,18 @@ describe('extractFairyPosition', () => {
 				time: 0,
 			})
 		).toBeNull()
+	})
+})
+
+describe('getDefaultFairySpawnPosition', () => {
+	test('returns the viewport center', () => {
+		expect(
+			getDefaultFairySpawnPosition({
+				x: 40,
+				y: 80,
+				w: 200,
+				h: 120,
+			})
+		).toEqual({ x: 140, y: 140 })
 	})
 })

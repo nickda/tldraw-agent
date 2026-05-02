@@ -4,6 +4,18 @@ import { Streaming } from '../../shared/types/Streaming'
 
 export type FairyPosition = { x: number; y: number }
 
+export function getDefaultFairySpawnPosition(viewportBounds: {
+	x: number
+	y: number
+	w: number
+	h: number
+}): FairyPosition {
+	return {
+		x: viewportBounds.x + viewportBounds.w / 2,
+		y: viewportBounds.y + viewportBounds.h / 2,
+	}
+}
+
 export function extractFairyPosition(
 	action: Streaming<AgentAction>,
 	normalize?: (position: FairyPosition) => FairyPosition

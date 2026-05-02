@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { didFairyPositionMove } from './FairyAvatarOverlay'
+import { didFairyPositionMove, getFairySpriteScale } from './FairyAvatarOverlay'
 
 describe('FairyAvatarOverlay styles', () => {
 	test('uses the expected absolute overlay positioning contract', () => {
@@ -39,5 +39,12 @@ describe('FairyAvatarOverlay styles', () => {
 		expect(didFairyPositionMove({ x: 10, y: 20 }, { x: 11, y: 20 })).toBe(true)
 		expect(didFairyPositionMove(null, { x: 10, y: 20 })).toBe(true)
 		expect(didFairyPositionMove({ x: 10, y: 20 }, null)).toBe(false)
+	})
+
+	test('keeps the sprite scale inverse to zoom level', () => {
+		expect(getFairySpriteScale(1)).toBe(1)
+		expect(getFairySpriteScale(2)).toBe(0.5)
+		expect(getFairySpriteScale(0.5)).toBe(2)
+		expect(getFairySpriteScale(0)).toBe(1)
 	})
 })

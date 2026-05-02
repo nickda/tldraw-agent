@@ -10,6 +10,10 @@ import { FairySprite } from './FairySprite'
 const FAIRY_MOVE_DURATION_MS = 400
 const FAIRY_ANNOYED_DELAY_MS = 2000
 
+function getFairySpriteScale(zoomLevel: number) {
+	return zoomLevel > 0 ? 1 / zoomLevel : 1
+}
+
 export function FairyAvatarOverlays() {
 	const agents = useAgents()
 
@@ -32,6 +36,14 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const annoyedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const isPressActiveRef = useRef(false)
 	const previousFairyPositionRef = useRef<VecModel | null>(null)
+	const zoomLevel = useValue(
+		'fairyZoomLevel',
+		() => {
+			editor.getCamera()
+			return editor.getZoomLevel()
+		},
+		[editor]
+	)
 
 	const screenPosition = useValue(
 		'fairyScreenPosition',
@@ -151,7 +163,14 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 					}, FAIRY_ANNOYED_DELAY_MS)
 				}}
 			>
-				<FairySprite fairyName={fairyName} state={state} />
+				<div
+					style={{
+						transform: `scale(${getFairySpriteScale(zoomLevel)})`,
+						transformOrigin: 'center bottom',
+					}}
+				>
+					<FairySprite fairyName={fairyName} state={state} />
+				</div>
 			</div>
 		</div>
 	)
@@ -168,3 +187,5 @@ export function didFairyPositionMove(
 		previousPosition.y !== currentPosition.y
 	)
 }
+
+export { getFairySpriteScale }
