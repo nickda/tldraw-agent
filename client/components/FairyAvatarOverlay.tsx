@@ -14,6 +14,23 @@ function getFairySpriteScale(zoomLevel: number) {
 	return zoomLevel > 0 ? 1 / zoomLevel : 1
 }
 
+export function getFairyPagePosition({
+	activeRequestBounds,
+	fairyPosition,
+}: {
+	activeRequestBounds: { x: number; y: number; w: number; h: number } | null | undefined
+	fairyPosition: VecModel | null
+}) {
+	if (activeRequestBounds) {
+		return {
+			x: activeRequestBounds.x + activeRequestBounds.w / 2,
+			y: activeRequestBounds.y + activeRequestBounds.h / 2,
+		}
+	}
+
+	return fairyPosition
+}
+
 export function FairyAvatarOverlays() {
 	const agents = useAgents()
 
@@ -29,6 +46,7 @@ export function FairyAvatarOverlays() {
 export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const editor = useEditor()
 	const fairyName = useMemo(() => generateFairyName(), [])
+	const currentRequest = useValue('activeRequest', () => agent.requests.getActiveRequest(), [agent])
 	const fairyPosition = useFairyPosition(agent)
 	const [motionState, setMotionState] = useState<FairyState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
@@ -45,25 +63,30 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		[editor]
 	)
 
+	const pagePosition = getFairyPagePosition({
+		activeRequestBounds: currentRequest?.bounds,
+		fairyPosition,
+	})
+
 	const screenPosition = useValue(
 		'fairyScreenPosition',
 		() => {
-			if (!fairyPosition) return null
+			if (!pagePosition) return null
 
 			// Recompute when the camera changes so the Fairy tracks pan/zoom.
 			editor.getCamera()
 			editor.getZoomLevel()
 
-			return editor.pageToScreen(fairyPosition)
+			return editor.pageToScreen(pagePosition)
 		},
-		[editor, fairyPosition]
+		[editor, pagePosition]
 	)
 
 	useEffect(() => {
-		if (!fairyPosition) return
+		if (!pagePosition) return
 
-		const hasMoved = didFairyPositionMove(previousFairyPositionRef.current, fairyPosition)
-		previousFairyPositionRef.current = fairyPosition
+		const hasMoved = didFairyPositionMove(previousFairyPositionRef.current, pagePosition)
+		previousFairyPositionRef.current = pagePosition
 
 		if (!hasMoved) return
 
@@ -75,7 +98,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 			setMotionState('idle')
 			movementTimeoutRef.current = null
 		}, FAIRY_MOVE_DURATION_MS)
-	}, [fairyPosition])
+	}, [pagePosition])
 
 	useEffect(() => {
 		const clearAnnoyedTimer = () => {

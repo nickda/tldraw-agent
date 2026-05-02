@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { didFairyPositionMove, getFairySpriteScale } from './FairyAvatarOverlay'
+import { didFairyPositionMove, getFairyPagePosition, getFairySpriteScale } from './FairyAvatarOverlay'
 
 describe('FairyAvatarOverlay styles', () => {
 	test('uses the expected absolute overlay positioning contract', () => {
@@ -46,5 +46,21 @@ describe('FairyAvatarOverlay styles', () => {
 		expect(getFairySpriteScale(2)).toBe(0.5)
 		expect(getFairySpriteScale(0.5)).toBe(2)
 		expect(getFairySpriteScale(0)).toBe(1)
+	})
+
+	test('uses the active request bounds center before the stored fairy position', () => {
+		expect(
+			getFairyPagePosition({
+				activeRequestBounds: { x: 10, y: 20, w: 80, h: 40 },
+				fairyPosition: { x: 999, y: 999 },
+			})
+		).toEqual({ x: 50, y: 40 })
+
+		expect(
+			getFairyPagePosition({
+				activeRequestBounds: null,
+				fairyPosition: { x: 12, y: 34 },
+			})
+		).toEqual({ x: 12, y: 34 })
 	})
 })
