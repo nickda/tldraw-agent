@@ -95,10 +95,13 @@ export class AgentService {
 		}
 
 		// Add the assistant message to indicate the start of the actions
-		messages.push({
-			role: 'assistant',
-			content: '{"actions": [{"_type":',
-		})
+		// Some models (e.g. claude-sonnet-4-6+) do not support assistant message prefill
+		if (modelDefinition.supportsPrefill !== false) {
+			messages.push({
+				role: 'assistant',
+				content: '{"actions": [{"_type":',
+			})
+		}
 
 		// Configure thinking budgets based on model. We let models think using the think action, so we keep this as low as possible to minimize time to first token
 		// Gemini: 256 for thinking models, 0 otherwise
@@ -134,7 +137,8 @@ export class AgentService {
 			})
 
 			const canForceResponseStart =
-				provider === 'anthropic.messages' || provider === 'google.generative-ai'
+				(provider === 'anthropic.messages' || provider === 'google.generative-ai') &&
+				modelDefinition.supportsPrefill !== false
 			let buffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
 			let cursor = 0
 			let maybeIncompleteAction: AgentAction | null = null

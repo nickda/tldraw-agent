@@ -8,11 +8,20 @@ export interface AgentModelDefinition {
 
 	// Overrides the default thinking behavior for that provider
 	thinking?: boolean
+
+	// Whether this model supports assistant message prefill (ending messages with an assistant turn)
+	supportsPrefill?: boolean
 }
 
 export const AGENT_MODEL_DEFINITIONS = {
 	// Anthropic models
-	// sonnet 4.5 is recommended
+	'claude-sonnet-4-6': {
+		name: 'claude-sonnet-4-6',
+		id: 'claude-sonnet-4-6',
+		provider: 'anthropic',
+		supportsPrefill: false,
+	},
+
 	'claude-sonnet-4-5': {
 		name: 'claude-sonnet-4-5',
 		id: 'claude-sonnet-4-5',
