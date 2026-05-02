@@ -1,5 +1,26 @@
 # tldraw agent
 
+## Quick start (local + ngrok)
+
+```bash
+# Stop everything
+pkill -f vite
+pkill -f ngrok
+
+# Start dev server + ngrok
+cd ~/Code/nick-dev/tldraw-agent
+npm run dev &
+ngrok http 5173 &
+
+# Get public URL
+curl -s http://localhost:4040/api/tunnels | python3 -c \
+  "import json,sys; print(next(t['public_url'] for t in json.load(sys.stdin)['tunnels'] if t['proto']=='https'))"
+```
+
+> ngrok URL changes every restart. First-time visitors see a warning page — click **Visit Site**.
+
+---
+
 This starter kit demonstrates how to build an agent that can manipulate the [tldraw](https://github.com/tldraw/tldraw) canvas.
 
 A chat panel on the right side of the screen lets users communicate with the agent, add context, and see chat history.
