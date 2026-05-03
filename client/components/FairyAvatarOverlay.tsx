@@ -63,7 +63,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		() => {
 			if (!pagePosition) return null
 			editor.getCamera()
-			return editor.pageToScreen(pagePosition)
+			return editor.pageToViewport(pagePosition)
 		},
 		[editor, pagePosition]
 	)
