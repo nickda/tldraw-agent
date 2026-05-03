@@ -14,7 +14,7 @@ import { AgentHelpers } from '../AgentHelpers'
 import { getModeNode } from '../modes/AgentModeChart'
 import { AgentModeType } from '../modes/AgentModeDefinitions'
 import { getPromptPartUtilsRecord, PromptPartUtil } from '../parts/PromptPartUtil'
-import { extractFairyPosition, extractFairyPositionFromDiff } from '../utils/fairyPosition'
+import { extractFairyPosition, extractFairyPositionFromDiff, getFairyPositionFromBounds } from '../utils/fairyPosition'
 import { AgentActionManager } from './managers/AgentActionManager'
 import { AgentChatManager } from './managers/AgentChatManager'
 import { AgentChatOriginManager } from './managers/AgentChatOriginManager'
@@ -593,6 +593,7 @@ export class TldrawAgent {
 			const prompt = await this.preparePrompt(request, helpers)
 			let incompleteDiff: RecordsDiff<TLRecord> | null = null
 			const actionPromises: Promise<void>[] = []
+			let lastShapeBoundsForResting: { x: number; y: number; w: number; h: number } | null = null
 			try {
 				for await (const action of this.streamAgentActions({ prompt, signal })) {
 					if (cancelled) break
@@ -633,9 +634,13 @@ export class TldrawAgent {
 								const fairyPosition =
 									extractFairyPositionFromDiff(
 										diff,
-										(shapeId) => editor.getShapePageBounds(shapeId as TLShapeId),
+										(shapeId) => {
+											const bounds = editor.getShapePageBounds(shapeId as TLShapeId)
+											if (bounds) lastShapeBoundsForResting = bounds
+											return bounds
+										},
 										{
-											placement: transformedAction.complete ? 'resting' : 'center',
+											placement: 'center',
 											zoomLevel: editor.getZoomLevel(),
 										}
 									) ??
@@ -671,6 +676,10 @@ export class TldrawAgent {
 					}
 				}
 				await Promise.all(actionPromises)
+				if (!cancelled && lastShapeBoundsForResting) {
+					const restingPos = getFairyPositionFromBounds(lastShapeBoundsForResting, 'resting', editor.getZoomLevel())
+					this.requests.setFairyPosition(restingPos)
+				}
 			} catch (e) {
 				if (e === 'Cancelled by user' || (e instanceof Error && e.name === 'AbortError')) {
 					return

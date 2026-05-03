@@ -46,3 +46,5 @@ Two placement modes for `getFairyPositionFromBounds`:
 - `resting` — Fairy moves to the bottom-right corner of the bounding box plus a clearance offset, used when an action completes so the Fairy stops obstructing the finished drawing.
 
 The resting offset is a **screen-space intent** (clear the ~40px sprite): it must be converted to page-space using the current zoom level before being stored as a `FairyPosition`. Formula: `pageOffset = FAIRY_RESTING_OFFSET_PX / zoomLevel`. Hardcoding the offset in page-space is wrong — at low zoom the Fairy barely moves; at high zoom it overshoots.
+
+**Timing:** `center` is used for every per-action position update (including `complete: true` streaming finals). `resting` fires exactly once per request, after `Promise.all(actionPromises)` resolves, using the last shape bounds touched during that request. Do NOT use `complete` flag to gate `resting` — discrete (non-streaming) actions always arrive as `complete: true` and would always skip `center` if gated this way.
