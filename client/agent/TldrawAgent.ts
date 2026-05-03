@@ -631,23 +631,19 @@ export class TldrawAgent {
 								// Apply the action to the app and editor
 								const { diff, promise } = this.actions.act(transformedAction, helpers)
 
-								const diffPos = extractFairyPositionFromDiff(
-									diff,
-									(shapeId) => {
-										const bounds = editor.getShapePageBounds(shapeId as TLShapeId)
-										if (bounds) lastShapeBoundsForResting = bounds
-										return bounds
-									},
-									{ placement: 'center', zoomLevel: editor.getZoomLevel() }
-								)
-								const actionPos = diffPos ?? extractFairyPosition(transformedAction, (position) =>
-									helpers.removeOffsetFromVec(position)
-								)
-								const fairyPosition = actionPos
-								console.log('[DEBUG-fairy] action:', transformedAction._type, 'complete:', transformedAction.complete,
-									'diffPos:', diffPos, 'actionPos:', actionPos,
-									'lastBounds:', lastShapeBoundsForResting,
-									'zoom:', editor.getZoomLevel())
+								const fairyPosition =
+									extractFairyPositionFromDiff(
+										diff,
+										(shapeId) => {
+											const bounds = editor.getShapePageBounds(shapeId as TLShapeId)
+											if (bounds) lastShapeBoundsForResting = bounds
+											return bounds
+										},
+										{ placement: 'center', zoomLevel: editor.getZoomLevel() }
+									) ??
+									extractFairyPosition(transformedAction, (position) =>
+										helpers.removeOffsetFromVec(position)
+									)
 								if (fairyPosition) {
 									this.requests.setFairyPosition(fairyPosition)
 								}
@@ -679,7 +675,6 @@ export class TldrawAgent {
 				await Promise.all(actionPromises)
 				if (!cancelled && lastShapeBoundsForResting) {
 					const restingPos = getFairyPositionFromBounds(lastShapeBoundsForResting, 'resting', editor.getZoomLevel())
-					console.log('[DEBUG-fairy] RESTING bounds:', lastShapeBoundsForResting, 'restingPos:', restingPos, 'zoom:', editor.getZoomLevel())
 					this.requests.setFairyPosition(restingPos)
 				}
 			} catch (e) {

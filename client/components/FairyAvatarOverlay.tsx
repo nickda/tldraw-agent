@@ -63,9 +63,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		() => {
 			if (!pagePosition) return null
 			editor.getCamera()
-			const vp = editor.pageToViewport(pagePosition)
-			console.log('[DEBUG-fairy] page:', pagePosition, 'viewport:', vp, 'zoom:', editor.getZoomLevel())
-			return vp
+			return editor.pageToViewport(pagePosition)
 		},
 		[editor, pagePosition]
 	)
