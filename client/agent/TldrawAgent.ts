@@ -635,9 +635,13 @@ export class TldrawAgent {
 									extractFairyPositionFromDiff(
 										diff,
 										(shapeId) => {
-											const bounds = editor.getShapePageBounds(shapeId as TLShapeId)
-											if (bounds) lastShapeBoundsForResting = bounds
-											return bounds
+											try {
+												const bounds = editor.getShapePageBounds(shapeId as TLShapeId)
+												if (bounds) lastShapeBoundsForResting = bounds
+												return bounds
+											} catch {
+												return null
+											}
 										},
 										{ placement: 'center', zoomLevel: editor.getZoomLevel() }
 									) ??
