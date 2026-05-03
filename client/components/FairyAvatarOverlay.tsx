@@ -58,15 +58,6 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 
 	const pagePosition = fairyPosition
 
-	const screenPosition = useValue(
-		'fairyScreenPosition',
-		() => {
-			if (!pagePosition) return null
-			editor.getCamera()
-			return editor.pageToScreen(pagePosition)
-		},
-		[editor, pagePosition]
-	)
 
 	const clearAnnoyedTimer = () => {
 		if (annoyedTimeoutRef.current) {
@@ -173,7 +164,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		}
 	}, [])
 
-	if (!pagePosition || !screenPosition) return null
+	if (!pagePosition) return null
 
 	const state: FairyState = isAnnoyed ? 'annoyed' : motionState
 
@@ -191,8 +182,8 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 				className="fairy-avatar-overlay__sprite"
 				style={{
 					position: 'absolute',
-					left: screenPosition.x,
-					top: screenPosition.y,
+					left: pagePosition.x,
+					top: pagePosition.y,
 					transition: isDragging
 						? 'none'
 						: `left ${FAIRY_MOVE_DURATION_MS}ms ease-out, top ${FAIRY_MOVE_DURATION_MS}ms ease-out`,
