@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.0.1] - 2026-05-03
+
+### Fixed
+
+- Fairy now stays next to the drawing during scroll: overlay uses page-space coordinates directly, matching how all other tldraw overlays work. Using `pageToViewport` was double-counting the camera transform and caused the Fairy to move 2× faster than the drawing during pan/scroll.
+- Fairy tracks the shape center while drawing: discrete actions (non-streaming `create`) were immediately jumping to the resting offset because `complete: true` fires on the only update. Resting now fires once after all action promises settle.
+
 ## [0.1.0.0] - 2026-05-03
 
 ### Added
