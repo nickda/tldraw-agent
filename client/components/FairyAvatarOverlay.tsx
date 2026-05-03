@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor, useValue, VecModel } from 'tldraw'
 import { TldrawAgent } from '../agent/TldrawAgent'
 import { useAgents } from '../agent/TldrawAgentAppProvider'
@@ -10,25 +10,16 @@ import { FairySprite } from './FairySprite'
 const FAIRY_MOVE_DURATION_MS = 400
 const FAIRY_ANNOYED_DELAY_MS = 2000
 
-function getFairySpriteScale(zoomLevel: number) {
+export function getFairySpriteScale(zoomLevel: number) {
 	return zoomLevel > 0 ? 1 / zoomLevel : 1
 }
 
-export function getFairyPagePosition({
-	activeRequestBounds,
-	fairyPosition,
-}: {
-	activeRequestBounds: { x: number; y: number; w: number; h: number } | null | undefined
-	fairyPosition: VecModel | null
-}) {
-	if (activeRequestBounds) {
-		return {
-			x: activeRequestBounds.x + activeRequestBounds.w / 2,
-			y: activeRequestBounds.y + activeRequestBounds.h / 2,
-		}
-	}
-
-	return fairyPosition
+export function getFairyScreenPosition(
+	pagePosition: VecModel | null,
+	pageToScreen: (pos: VecModel) => VecModel
+): VecModel | null {
+	if (!pagePosition) return null
+	return pageToScreen(pagePosition)
 }
 
 export function FairyAvatarOverlays() {
@@ -46,14 +37,16 @@ export function FairyAvatarOverlays() {
 export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const editor = useEditor()
 	const fairyName = useMemo(() => generateFairyName(), [])
-	const currentRequest = useValue('activeRequest', () => agent.requests.getActiveRequest(), [agent])
 	const fairyPosition = useFairyPosition(agent)
 	const [motionState, setMotionState] = useState<FairyState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const annoyedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const isPressActiveRef = useRef(false)
+	const activePointerIdRef = useRef<number | null>(null)
+	const dragOffsetRef = useRef<VecModel | null>(null)
 	const previousFairyPositionRef = useRef<VecModel | null>(null)
+	const [isDragging, setIsDragging] = useState(false)
 	const zoomLevel = useValue(
 		'fairyZoomLevel',
 		() => {
@@ -63,27 +56,86 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		[editor]
 	)
 
-	const pagePosition = getFairyPagePosition({
-		activeRequestBounds: currentRequest?.bounds,
-		fairyPosition,
-	})
+	const pagePosition = fairyPosition
 
 	const screenPosition = useValue(
 		'fairyScreenPosition',
 		() => {
 			if (!pagePosition) return null
-
-			// Recompute when the camera changes so the Fairy tracks pan/zoom.
 			editor.getCamera()
-			editor.getZoomLevel()
-
 			return editor.pageToScreen(pagePosition)
 		},
 		[editor, pagePosition]
 	)
 
+	const clearAnnoyedTimer = () => {
+		if (annoyedTimeoutRef.current) {
+			clearTimeout(annoyedTimeoutRef.current)
+			annoyedTimeoutRef.current = null
+		}
+	}
+
+	const clearPointerInteraction = () => {
+		activePointerIdRef.current = null
+		dragOffsetRef.current = null
+		isPressActiveRef.current = false
+		clearAnnoyedTimer()
+		setIsAnnoyed(false)
+		setIsDragging(false)
+	}
+
+	const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+		if (!pagePosition) return
+
+		event.preventDefault()
+		event.stopPropagation()
+		event.currentTarget.setPointerCapture(event.pointerId)
+
+		const pointerPagePosition = editor.screenToPage({ x: event.clientX, y: event.clientY })
+		activePointerIdRef.current = event.pointerId
+		dragOffsetRef.current = {
+			x: pagePosition.x - pointerPagePosition.x,
+			y: pagePosition.y - pointerPagePosition.y,
+		}
+		isPressActiveRef.current = true
+		setIsDragging(true)
+
+		clearAnnoyedTimer()
+		annoyedTimeoutRef.current = setTimeout(() => {
+			if (isPressActiveRef.current) {
+				setIsAnnoyed(true)
+			}
+			annoyedTimeoutRef.current = null
+		}, FAIRY_ANNOYED_DELAY_MS)
+	}
+
+	const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+		if (activePointerIdRef.current !== event.pointerId || !dragOffsetRef.current) return
+
+		event.preventDefault()
+		event.stopPropagation()
+
+		isPressActiveRef.current = false
+		clearAnnoyedTimer()
+
+		const pointerPagePosition = editor.screenToPage({ x: event.clientX, y: event.clientY })
+		agent.requests.setFairyPosition({
+			x: pointerPagePosition.x + dragOffsetRef.current.x,
+			y: pointerPagePosition.y + dragOffsetRef.current.y,
+		})
+	}
+
+	const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+		if (activePointerIdRef.current !== event.pointerId) return
+
+		event.preventDefault()
+		event.stopPropagation()
+		clearPointerInteraction()
+	}
+
 	useEffect(() => {
 		if (!pagePosition) return
+		if (activePointerIdRef.current !== null) return
 
 		const hasMoved = didFairyPositionMove(previousFairyPositionRef.current, pagePosition)
 		previousFairyPositionRef.current = pagePosition
@@ -101,29 +153,16 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	}, [pagePosition])
 
 	useEffect(() => {
-		const clearAnnoyedTimer = () => {
-			if (annoyedTimeoutRef.current) {
-				clearTimeout(annoyedTimeoutRef.current)
-				annoyedTimeoutRef.current = null
-			}
-		}
-
-		const clearAnnoyedPress = () => {
-			isPressActiveRef.current = false
-			clearAnnoyedTimer()
-			setIsAnnoyed(false)
-		}
-
-		window.addEventListener('mouseup', clearAnnoyedPress)
-		window.addEventListener('pointerup', clearAnnoyedPress)
-		window.addEventListener('pointercancel', clearAnnoyedPress)
-		window.addEventListener('blur', clearAnnoyedPress)
+		window.addEventListener('mouseup', clearPointerInteraction)
+		window.addEventListener('pointerup', clearPointerInteraction)
+		window.addEventListener('pointercancel', clearPointerInteraction)
+		window.addEventListener('blur', clearPointerInteraction)
 
 		return () => {
-			window.removeEventListener('mouseup', clearAnnoyedPress)
-			window.removeEventListener('pointerup', clearAnnoyedPress)
-			window.removeEventListener('pointercancel', clearAnnoyedPress)
-			window.removeEventListener('blur', clearAnnoyedPress)
+			window.removeEventListener('mouseup', clearPointerInteraction)
+			window.removeEventListener('pointerup', clearPointerInteraction)
+			window.removeEventListener('pointercancel', clearPointerInteraction)
+			window.removeEventListener('blur', clearPointerInteraction)
 
 			if (movementTimeoutRef.current) {
 				clearTimeout(movementTimeoutRef.current)
@@ -134,7 +173,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		}
 	}, [])
 
-	if (!screenPosition) return null
+	if (!pagePosition || !screenPosition) return null
 
 	const state: FairyState = isAnnoyed ? 'annoyed' : motionState
 
@@ -154,37 +193,18 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 					position: 'absolute',
 					left: screenPosition.x,
 					top: screenPosition.y,
-					transition: `left ${FAIRY_MOVE_DURATION_MS}ms ease-out, top ${FAIRY_MOVE_DURATION_MS}ms ease-out`,
+					transition: isDragging
+						? 'none'
+						: `left ${FAIRY_MOVE_DURATION_MS}ms ease-out, top ${FAIRY_MOVE_DURATION_MS}ms ease-out`,
 					transform: 'translate(-50%, -100%)',
+					pointerEvents: 'auto',
+					cursor: isDragging ? 'grabbing' : 'grab',
+					touchAction: 'none',
 				}}
-				onMouseDown={() => {
-					if (isPressActiveRef.current) return
-
-					isPressActiveRef.current = true
-					if (annoyedTimeoutRef.current) {
-						clearTimeout(annoyedTimeoutRef.current)
-					}
-					annoyedTimeoutRef.current = setTimeout(() => {
-						if (isPressActiveRef.current) {
-							setIsAnnoyed(true)
-						}
-						annoyedTimeoutRef.current = null
-					}, FAIRY_ANNOYED_DELAY_MS)
-				}}
-				onPointerDown={() => {
-					if (isPressActiveRef.current) return
-
-					isPressActiveRef.current = true
-					if (annoyedTimeoutRef.current) {
-						clearTimeout(annoyedTimeoutRef.current)
-					}
-					annoyedTimeoutRef.current = setTimeout(() => {
-						if (isPressActiveRef.current) {
-							setIsAnnoyed(true)
-						}
-						annoyedTimeoutRef.current = null
-					}, FAIRY_ANNOYED_DELAY_MS)
-				}}
+				onPointerDown={handlePointerDown}
+				onPointerMove={handlePointerMove}
+				onPointerUp={handlePointerUp}
+				onPointerCancel={handlePointerUp}
 			>
 				<div
 					style={{
@@ -211,4 +231,3 @@ export function didFairyPositionMove(
 	)
 }
 
-export { getFairySpriteScale }

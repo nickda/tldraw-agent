@@ -3,14 +3,23 @@ import { AgentAction } from '../../shared/types/AgentAction'
 import { Streaming } from '../../shared/types/Streaming'
 
 export type FairyPosition = { x: number; y: number }
+type BoundsLike = { x: number; y: number; w: number; h: number }
+type ShapeRecordLike = { id: string; typeName: string }
+type ShapeDiffLike = {
+	added: Record<string, ShapeRecordLike>
+	updated: Record<string, [ShapeRecordLike, ShapeRecordLike]>
+}
+type FairyBoundsPlacement = 'center' | 'resting'
+
+const FAIRY_RESTING_OFFSET_SCREEN_PX = 48
 
 export function getDefaultFairySpawnPosition(
 	viewportBounds: {
-	x: number
-	y: number
-	w: number
-	h: number
-},
+		x: number
+		y: number
+		w: number
+		h: number
+	},
 	index = 0
 ): FairyPosition {
 	const center = {
@@ -32,6 +41,49 @@ export function getDefaultFairySpawnPosition(
 	}
 }
 
+export function extractFairyPositionFromDiff(
+	diff: ShapeDiffLike,
+	getShapePageBounds: (shapeId: string) => BoundsLike | null | undefined,
+	options: { placement?: FairyBoundsPlacement; zoomLevel?: number } = {}
+): FairyPosition | null {
+	const changedShapeIds = [
+		...Object.values(diff.added)
+			.filter((record) => record.typeName === 'shape')
+			.map((record) => record.id),
+		...Object.values(diff.updated)
+			.map(([, record]) => record)
+			.filter((record) => record.typeName === 'shape')
+			.map((record) => record.id),
+	]
+
+	const shapeId = changedShapeIds.at(-1)
+	if (!shapeId) return null
+
+	const bounds = getShapePageBounds(shapeId)
+	if (!bounds) return null
+
+	return getFairyPositionFromBounds(bounds, options.placement ?? 'center', options.zoomLevel)
+}
+
+export function getFairyPositionFromBounds(
+	bounds: BoundsLike,
+	placement: FairyBoundsPlacement,
+	zoomLevel = 1
+): FairyPosition {
+	if (placement === 'resting') {
+		const pageOffset = FAIRY_RESTING_OFFSET_SCREEN_PX / (zoomLevel > 0 ? zoomLevel : 1)
+		return {
+			x: bounds.x + bounds.w + pageOffset,
+			y: bounds.y + bounds.h + pageOffset,
+		}
+	}
+
+	return {
+		x: bounds.x + bounds.w / 2,
+		y: bounds.y + bounds.h / 2,
+	}
+}
+
 export function extractFairyPosition(
 	action: Streaming<AgentAction>,
 	normalize?: (position: FairyPosition) => FairyPosition
@@ -49,11 +101,6 @@ export function extractFairyPosition(
 			break
 		case 'pen':
 			position = getPointsBoundsCenter(action.points)
-			break
-		case 'setMyView':
-			position = hasBox(action.x, action.y, action.w, action.h)
-				? { x: action.x + action.w / 2, y: action.y + action.h / 2 }
-				: null
 			break
 		default:
 			position = null

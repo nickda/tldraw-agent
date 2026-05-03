@@ -26,9 +26,23 @@ The emotional/behavioural state of a Fairy. Three values:
 - `drawing` — a position-moving action (`create`, `place`, `pen`, `move`, etc.) is currently executing. Fairy faces away (`scaleX(-1)`).
 - `annoyed` — user has held mousedown on the Fairy sprite for >2 seconds. Easter egg.
 
-When the agent has no active request (`$fairyPosition = null`), the Fairy component unmounts entirely. There is no `idle` state for a hidden Fairy.
+Before the Fairy's first position is set (`$fairyPosition = null`), the Fairy component is hidden. There is no `idle` state for a hidden Fairy.
 
 ### Fairy Position
 The page-space canvas coordinates `{x: number, y: number}` of the point the Fairy is currently tracking. Stored as a tldraw `Atom` in page-space. Converted to screen-space on read via `editor.pageToScreen()` — never stored in screen-space. This ensures zoom/pan correctness without re-running action extraction.
 
 The atom is `null` only before the Fairy's first action fires (Fairy not yet visible). Once a position is set, it is **never reset to null** — the Fairy stays at its last position when the agent task ends, continuing to bob and flutter wings in `idle` state. The Fairy disappears only on full page reload.
+
+`FairyAvatarOverlay` returns null when `pagePosition` or `screenPosition` is null, so the Fairy component is hidden before the first position is set. After that, it is always mounted.
+
+### Fairy Drag
+User can drag the Fairy to reposition it. Drag writes page-space coordinates directly to `$fairyPosition` via `agent.requests.setFairyPosition()`. Agent position always overrides — the next agent action will move the fairy back. Drag is a "get out of my way" gesture, not a persistent preference.
+
+While dragging (`activePointerIdRef.current !== null`), the Fairy's `motionState` must not update. `drawing` state (face-away) is only for agent-driven position changes. The `useEffect` that sets `drawing` must bail out when drag is active.
+
+### Fairy Placement
+Two placement modes for `getFairyPositionFromBounds`:
+- `center` — Fairy tracks the center of the shape's bounding box while an action is in progress.
+- `resting` — Fairy moves to the bottom-right corner of the bounding box plus a clearance offset, used when an action completes so the Fairy stops obstructing the finished drawing.
+
+The resting offset is a **screen-space intent** (clear the ~40px sprite): it must be converted to page-space using the current zoom level before being stored as a `FairyPosition`. Formula: `pageOffset = FAIRY_RESTING_OFFSET_PX / zoomLevel`. Hardcoding the offset in page-space is wrong — at low zoom the Fairy barely moves; at high zoom it overshoots.

@@ -57,7 +57,6 @@ export class AgentRequestManager extends BaseAgentManager {
 		this.$activeRequest.set(null)
 		this.$scheduledRequest.set(null)
 		this.$isPrompting.set(false)
-		this.$fairyPosition.set(null)
 		this.cancelFn = null
 	}
 

@@ -3,19 +3,20 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { FairySprite } from './FairySprite'
 
 describe('FairySprite', () => {
-	test('renders the fairy name below the sprite with the expected pointer-event contract', () => {
+	test('keeps the fairy name out of visible markup while preserving the pointer-event contract', () => {
 		const markup = renderToStaticMarkup(
 			<FairySprite fairyName="Bonnie Kettlewick" state="idle" />
 		)
 
-		expect(markup).toContain('Bonnie Kettlewick')
 		expect(markup).toContain('data-fairy-state="idle"')
 		expect(markup).toContain('pointer-events:none')
 		expect(markup).toContain('pointer-events:auto')
 		expect(markup).toContain('<svg')
+		expect(markup).toContain('aria-label="Bonnie Kettlewick fairy"')
+		expect(markup).not.toContain('fairy-sprite__name')
 	})
 
-	test('adds state-specific classes for drawing and annoyed fairy behavior', () => {
+	test('adds state-specific classes and a back-facing drawing pose', () => {
 		const drawingMarkup = renderToStaticMarkup(
 			<FairySprite fairyName="Grog Fernsby" state="drawing" />
 		)
@@ -24,6 +25,8 @@ describe('FairySprite', () => {
 		)
 
 		expect(drawingMarkup).toContain('fairy-sprite--drawing')
+		expect(drawingMarkup).toContain('fairy-sprite__pose--drawing')
+		expect(drawingMarkup).not.toContain('fairy-sprite__pose--front')
 		expect(annoyedMarkup).toContain('fairy-sprite--annoyed')
 	})
 })

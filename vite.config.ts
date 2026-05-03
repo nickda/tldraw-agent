@@ -12,8 +12,7 @@ export default defineConfig(() => {
 			cloudflare(),
 			react(),
 		],
-		server: {
-			allowedHosts: true,
-		},
+		// To allow a dev tunnel (e.g. Cloudflare tunnel, ngrok), add the hostname explicitly:
+		// server: { allowedHosts: ['your-tunnel-hostname.trycloudflare.com'] },
 	}
 })

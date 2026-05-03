@@ -1,4 +1,4 @@
-import { Editor, RecordsDiff, reverseRecordsDiff, structuredClone, TLRecord } from 'tldraw'
+import { Editor, RecordsDiff, reverseRecordsDiff, structuredClone, TLRecord, TLShapeId } from 'tldraw'
 import { convertTldrawShapeToFocusedShape } from '../../shared/format/convertTldrawShapeToFocusedShape'
 import { AgentModelName } from '../../shared/models'
 import { AgentAction } from '../../shared/types/AgentAction'
@@ -14,7 +14,7 @@ import { AgentHelpers } from '../AgentHelpers'
 import { getModeNode } from '../modes/AgentModeChart'
 import { AgentModeType } from '../modes/AgentModeDefinitions'
 import { getPromptPartUtilsRecord, PromptPartUtil } from '../parts/PromptPartUtil'
-import { extractFairyPosition } from '../utils/fairyPosition'
+import { extractFairyPosition, extractFairyPositionFromDiff } from '../utils/fairyPosition'
 import { AgentActionManager } from './managers/AgentActionManager'
 import { AgentChatManager } from './managers/AgentChatManager'
 import { AgentChatOriginManager } from './managers/AgentChatOriginManager'
@@ -627,15 +627,24 @@ export class TldrawAgent {
 									return
 								}
 
-								const fairyPosition = extractFairyPosition(transformedAction, (position) =>
-									helpers.removeOffsetFromVec(position)
-								)
+								// Apply the action to the app and editor
+								const { diff, promise } = this.actions.act(transformedAction, helpers)
+
+								const fairyPosition =
+									extractFairyPositionFromDiff(
+										diff,
+										(shapeId) => editor.getShapePageBounds(shapeId as TLShapeId),
+										{
+											placement: transformedAction.complete ? 'resting' : 'center',
+											zoomLevel: editor.getZoomLevel(),
+										}
+									) ??
+									extractFairyPosition(transformedAction, (position) =>
+										helpers.removeOffsetFromVec(position)
+									)
 								if (fairyPosition) {
 									this.requests.setFairyPosition(fairyPosition)
 								}
-
-								// Apply the action to the app and editor
-								const { diff, promise } = this.actions.act(transformedAction, helpers)
 
 								if (promise) {
 									actionPromises.push(promise)

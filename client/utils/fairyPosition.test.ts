@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { extractFairyPosition, getDefaultFairySpawnPosition } from './fairyPosition'
+import {
+	extractFairyPosition,
+	extractFairyPositionFromDiff,
+	getDefaultFairySpawnPosition,
+	getFairyPositionFromBounds,
+} from './fairyPosition'
 
 describe('extractFairyPosition', () => {
 	const normalizeFromChatOrigin = ({ x, y }: { x: number; y: number }) => ({
@@ -153,7 +158,35 @@ describe('extractFairyPosition', () => {
 		).toEqual({ x: 130, y: 250 })
 	})
 
-	test('returns the viewport center for setMyView', () => {
+	test('returns null for non-spatial actions', () => {
+		expect(
+			extractFairyPosition({
+				_type: 'think',
+				complete: true,
+				text: 'Thinking',
+				time: 0,
+			})
+		).toBeNull()
+	})
+
+	test('returns null for draw shapes because pen-stroke position is tracked via diff bounds', () => {
+		expect(
+			extractFairyPosition({
+				_type: 'create',
+				complete: true,
+				time: 0,
+				intent: 'Draw',
+				shape: {
+					_type: 'draw',
+					color: 'black',
+					note: '',
+					shapeId: 'shape-1' as any,
+				},
+			})
+		).toBeNull()
+	})
+
+	test('returns null for setMyView because camera movement is not drawing position', () => {
 		expect(
 			extractFairyPosition({
 				_type: 'setMyView',
@@ -164,35 +197,6 @@ describe('extractFairyPosition', () => {
 				w: 80,
 				x: 100,
 				y: 200,
-			})
-		).toEqual({ x: 140, y: 220 })
-	})
-
-	test('normalizes the viewport center for setMyView to page space', () => {
-		expect(
-			extractFairyPosition(
-				{
-					_type: 'setMyView',
-					complete: true,
-					h: 40,
-					intent: 'Look over here',
-					time: 0,
-					w: 80,
-					x: 100,
-					y: 200,
-				},
-				normalizeFromChatOrigin
-			)
-		).toEqual({ x: 240, y: 420 })
-	})
-
-	test('returns null for non-spatial actions', () => {
-		expect(
-			extractFairyPosition({
-				_type: 'think',
-				complete: true,
-				text: 'Thinking',
-				time: 0,
 			})
 		).toBeNull()
 	})
@@ -209,6 +213,109 @@ describe('extractFairyPosition', () => {
 				time: 0,
 			})
 		).toBeNull()
+	})
+})
+
+describe('extractFairyPositionFromDiff', () => {
+	test('returns null when diff is empty', () => {
+		expect(
+			extractFairyPositionFromDiff({ added: {}, updated: {} }, () => ({ x: 0, y: 0, w: 10, h: 10 }))
+		).toBeNull()
+	})
+
+	test('returns null when getShapePageBounds returns null', () => {
+		expect(
+			extractFairyPositionFromDiff(
+				{ added: { 'shape:x': { id: 'shape:x', typeName: 'shape' } }, updated: {} },
+				() => null
+			)
+		).toBeNull()
+	})
+
+	test('returns the center of the last changed editor shape bounds', () => {
+		expect(
+			extractFairyPositionFromDiff(
+				{
+					added: {
+						'shape:dot-1': { id: 'shape:dot-1', typeName: 'shape' },
+					},
+					updated: {},
+				},
+				(shapeId) => {
+					if (shapeId !== 'shape:dot-1') return null
+					return { x: 140, y: 60, w: 20, h: 20 }
+				}
+			)
+		).toEqual({ x: 150, y: 70 })
+	})
+
+	test('ignores non-shape diffs', () => {
+		expect(
+			extractFairyPositionFromDiff(
+				{
+					added: {
+						'instance:camera': { id: 'instance:camera', typeName: 'instance' },
+					},
+					updated: {},
+				},
+				() => ({ x: 0, y: 0, w: 10, h: 10 })
+			)
+		).toBeNull()
+	})
+
+	test('returns a resting position outside the changed shape bounds', () => {
+		expect(
+			extractFairyPositionFromDiff(
+				{
+					added: {
+						'shape:dot-1': { id: 'shape:dot-1', typeName: 'shape' },
+					},
+					updated: {},
+				},
+				() => ({ x: 140, y: 60, w: 20, h: 20 }),
+				{ placement: 'resting' }
+			)
+		).toEqual({ x: 208, y: 128 })
+	})
+
+	test('scales resting offset by zoom level', () => {
+		// bounds {x:140, y:60, w:20, h:20}, zoom=0.5 → pageOffset=96 → x=140+20+96=256, y=60+20+96=176
+		expect(
+			extractFairyPositionFromDiff(
+				{
+					added: {
+						'shape:dot-1': { id: 'shape:dot-1', typeName: 'shape' },
+					},
+					updated: {},
+				},
+				() => ({ x: 140, y: 60, w: 20, h: 20 }),
+				{ placement: 'resting', zoomLevel: 0.5 }
+			)
+		).toEqual({ x: 256, y: 176 })
+	})
+})
+
+describe('getFairyPositionFromBounds', () => {
+	test('returns either the bounds center or a resting position outside the bounds', () => {
+		const bounds = { x: 10, y: 20, w: 80, h: 40 }
+
+		expect(getFairyPositionFromBounds(bounds, 'center')).toEqual({ x: 50, y: 40 })
+		expect(getFairyPositionFromBounds(bounds, 'resting')).toEqual({ x: 138, y: 108 })
+	})
+
+	test('falls back to zoom=1 when zoom is 0 to avoid Infinity position', () => {
+		const bounds = { x: 10, y: 20, w: 80, h: 40 }
+		expect(getFairyPositionFromBounds(bounds, 'resting', 0)).toEqual({ x: 138, y: 108 })
+	})
+
+	test('scales resting offset by zoom level so clearance stays constant in screen space', () => {
+		const bounds = { x: 10, y: 20, w: 80, h: 40 }
+		// zoom=0.5 → pageOffset = 48/0.5 = 96
+		expect(getFairyPositionFromBounds(bounds, 'resting', 0.5)).toEqual({ x: 186, y: 156 })
+		// zoom=2 → pageOffset = 48/2 = 24
+		expect(getFairyPositionFromBounds(bounds, 'resting', 2)).toEqual({ x: 114, y: 84 })
+		// zoom=1 (default) unchanged
+		expect(getFairyPositionFromBounds(bounds, 'resting', 1)).toEqual({ x: 138, y: 108 })
 	})
 })
 
