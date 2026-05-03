@@ -29,11 +29,11 @@ The emotional/behavioural state of a Fairy. Three values:
 Before the Fairy's first position is set (`$fairyPosition = null`), the Fairy component is hidden. There is no `idle` state for a hidden Fairy.
 
 ### Fairy Position
-The page-space canvas coordinates `{x: number, y: number}` of the point the Fairy is currently tracking. Stored as a tldraw `Atom` in page-space. Converted to screen-space on read via `editor.pageToScreen()` — never stored in screen-space. This ensures zoom/pan correctness without re-running action extraction.
+The page-space canvas coordinates `{x: number, y: number}` of the point the Fairy is currently tracking. Stored as a tldraw `Atom` in page-space. Used **directly** as CSS `left/top` in the overlay — **do not convert via `pageToViewport` or `pageToScreen`**. The tldraw `Overlays` slot applies the camera CSS transform, so page coordinates are the correct CSS coordinates inside it. Converting via `pageToViewport` would double-count the camera pan and cause the fairy to move 2× during scroll.
 
 The atom is `null` only before the Fairy's first action fires (Fairy not yet visible). Once a position is set, it is **never reset to null** — the Fairy stays at its last position when the agent task ends, continuing to bob and flutter wings in `idle` state. The Fairy disappears only on full page reload.
 
-`FairyAvatarOverlay` returns null when `pagePosition` or `screenPosition` is null, so the Fairy component is hidden before the first position is set. After that, it is always mounted.
+`FairyAvatarOverlay` returns null when `pagePosition` is null, so the Fairy component is hidden before the first position is set. After that, it is always mounted.
 
 ### Fairy Drag
 User can drag the Fairy to reposition it. Drag writes page-space coordinates directly to `$fairyPosition` via `agent.requests.setFairyPosition()`. Agent position always overrides — the next agent action will move the fairy back. Drag is a "get out of my way" gesture, not a persistent preference.
