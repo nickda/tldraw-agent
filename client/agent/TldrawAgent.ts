@@ -628,8 +628,17 @@ export class TldrawAgent {
 									return
 								}
 
-								// Apply the action to the app and editor
-								const { diff, promise } = this.actions.act(transformedAction, helpers)
+								// Apply the action to the app and editor.
+								// tldraw geometry errors (e.g. Polyline2d with < 2 points) can throw
+								// during reactive cache recomputation inside createShape — skip and continue.
+								let actResult: ReturnType<typeof this.actions.act> | null = null
+								try {
+									actResult = this.actions.act(transformedAction, helpers)
+								} catch {
+									incompleteDiff = null
+									return
+								}
+								const { diff, promise } = actResult
 
 								const fairyPosition =
 									extractFairyPositionFromDiff(
