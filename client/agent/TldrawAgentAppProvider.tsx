@@ -2,6 +2,7 @@ import { createContext, memo, ReactNode, useCallback, useContext, useEffect, use
 import { useEditor, useToasts, useValue } from 'tldraw'
 import { TldrawAgent } from './TldrawAgent'
 import { TldrawAgentApp } from './TldrawAgentApp'
+import { getDefaultFairySpawnPosition } from '../utils/fairyPosition'
 
 const TldrawAgentAppContext = createContext<TldrawAgentApp | null>(null)
 
@@ -83,6 +84,14 @@ export const TldrawAgentAppProvider = memo(function TldrawAgentAppProvider({
 
 		// Ensure at least one agent exists (creates one if none were loaded)
 		const defaultAgent = instance.agents.ensureAtLeastOneAgent()
+
+		// Seed any agents that don't yet have a Fairy position so they render immediately.
+		const viewportBounds = editor.getViewportPageBounds()
+		instance.agents.getAgents().forEach((agent, index) => {
+			if (!agent.requests.getFairyPosition()) {
+				agent.requests.setFairyPosition(getDefaultFairySpawnPosition(viewportBounds, index))
+			}
+		})
 
 		// Start auto-saving (must be after loadState to avoid saving during load)
 		instance.persistence.startAutoSave()

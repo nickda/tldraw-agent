@@ -27,6 +27,12 @@ export class AgentRequestManager extends BaseAgentManager {
 	private $isPrompting: Atom<boolean>
 
 	/**
+	 * The Fairy's last known page-space position.
+	 * Null until the Fairy first appears.
+	 */
+	private $fairyPosition: Atom<{ x: number; y: number } | null>
+
+	/**
 	 * A function that cancels the agent's current prompt, if one is active.
 	 */
 	private cancelFn: (() => void) | null = null
@@ -40,6 +46,7 @@ export class AgentRequestManager extends BaseAgentManager {
 		this.$activeRequest = atom('activeRequest', null)
 		this.$scheduledRequest = atom('scheduledRequest', null)
 		this.$isPrompting = atom('isPrompting', false)
+		this.$fairyPosition = atom('fairyPosition', null)
 	}
 
 	/**
@@ -141,6 +148,20 @@ export class AgentRequestManager extends BaseAgentManager {
 	 */
 	getActiveRequest() {
 		return this.$activeRequest.get()
+	}
+
+	/**
+	 * Set the Fairy's last known page-space position.
+	 */
+	setFairyPosition(position: { x: number; y: number } | null) {
+		this.$fairyPosition.set(position)
+	}
+
+	/**
+	 * Get the Fairy's last known page-space position.
+	 */
+	getFairyPosition() {
+		return this.$fairyPosition.get()
 	}
 
 	/**

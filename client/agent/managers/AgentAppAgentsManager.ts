@@ -1,6 +1,7 @@
 import { Editor, EditorAtom, uniqueId } from 'tldraw'
 import { TldrawAgent } from '../TldrawAgent'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
+import { getDefaultFairySpawnPosition } from '../../utils/fairyPosition'
 
 /**
  * Generate a unique agent ID.
@@ -86,6 +87,12 @@ export class AgentAppAgentsManager extends BaseAgentAppManager {
 
 		// Register the agent in the static atom
 		AgentAppAgentsManager.$agents.update(this.app.editor, (agents) => [...agents, agent])
+
+		if (!agent.requests.getFairyPosition()) {
+			agent.requests.setFairyPosition(
+				getDefaultFairySpawnPosition(this.app.editor.getViewportPageBounds(), this.getAgents().length - 1)
+			)
+		}
 
 		return agent
 	}
