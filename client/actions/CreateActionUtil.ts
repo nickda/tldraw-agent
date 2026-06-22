@@ -66,6 +66,16 @@ export const CreateActionUtil = registerActionUtil(
 			// If there's no shape yet, return early
 			if (!shape || !shape._type) return
 
+			// Reject `draw` shapes created via the `create` action. Draw shapes are
+			// freeform strokes that must be made with the `pen` action (which supplies
+			// points and guards against fewer than 2). A `draw` shape created here has
+			// no segments, so tldraw builds a Polyline2d with < 2 points and throws
+			// "Polyline2d: points must be an array of at least 2 points" from its
+			// reactive geometry cache during render, crashing the whole app. The schema
+			// and system prompt already forbid this; enforce it so a small model that
+			// ignores the instruction cannot take down the canvas.
+			if (shape._type === 'draw') return
+
 			// Translate the shape back to the chat's position
 			const shapePartial = helpers.removeOffsetFromShapePartial(shape)
 
