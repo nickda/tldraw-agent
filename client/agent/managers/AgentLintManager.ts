@@ -375,37 +375,48 @@ export class AgentLintManager extends BaseAgentManager {
 	 * Check if two shapes overlap using geometry-based detection.
 	 */
 	private shapesOverlap(shapeA: TLShape, shapeB: TLShape): boolean {
-		const { editor } = this.agent
+		// Reading tldraw geometry can throw for malformed shapes a small model may
+		// emit (e.g. a draw/pen shape with fewer than 2 points throws
+		// "Polyline2d: points must be an array of at least 2 points"). A shape we
+		// can't compute geometry for can't be meaningfully said to overlap, so we
+		// treat any geometry failure as "no overlap" rather than letting it crash
+		// the app. See PRs #9-11 for the same geometry-crash class on other paths.
+		try {
+			const { editor } = this.agent
 
-		// Quick bounds check first for early exit
-		const boundsA = editor.getShapePageBounds(shapeA)
-		const boundsB = editor.getShapePageBounds(shapeB)
-		if (!boundsA || !boundsB || !Box.Collides(boundsA, boundsB)) {
+			// Quick bounds check first for early exit
+			const boundsA = editor.getShapePageBounds(shapeA)
+			const boundsB = editor.getShapePageBounds(shapeB)
+			if (!boundsA || !boundsB || !Box.Collides(boundsA, boundsB)) {
+				return false
+			}
+
+			// Get geometry and transform for shape A
+			const geometryA = editor.getShapeGeometry(shapeA)
+			const pageTransformA = editor.getShapePageTransform(shapeA)
+			const verticesA = pageTransformA.applyToPoints(geometryA.vertices)
+
+			// Get clip path if it exists
+			const shapeUtilA = editor.getShapeUtil(shapeA.type)
+			const clipPathA = shapeUtilA.getClipPath?.(shapeA)
+			const polygonA = clipPathA
+				? intersectPolygonPolygon(pageTransformA.applyToPoints(clipPathA), verticesA)
+				: verticesA
+
+			if (!polygonA || polygonA.length === 0) {
+				return false
+			}
+
+			// Transform polygon A into shape B's local space
+			const pageTransformB = editor.getShapePageTransform(shapeB)
+			const polygonAInShapeBSpace = pageTransformB.clone().invert().applyToPoints(polygonA)
+
+			// Check if shape B's geometry overlaps with the transformed polygon
+			const geometryB = editor.getShapeGeometry(shapeB)
+			return geometryB.overlapsPolygon(polygonAInShapeBSpace)
+		} catch (error) {
+			console.warn('shapesOverlap: skipping pair due to geometry error', error)
 			return false
 		}
-
-		// Get geometry and transform for shape A
-		const geometryA = editor.getShapeGeometry(shapeA)
-		const pageTransformA = editor.getShapePageTransform(shapeA)
-		const verticesA = pageTransformA.applyToPoints(geometryA.vertices)
-
-		// Get clip path if it exists
-		const shapeUtilA = editor.getShapeUtil(shapeA.type)
-		const clipPathA = shapeUtilA.getClipPath?.(shapeA)
-		const polygonA = clipPathA
-			? intersectPolygonPolygon(pageTransformA.applyToPoints(clipPathA), verticesA)
-			: verticesA
-
-		if (!polygonA || polygonA.length === 0) {
-			return false
-		}
-
-		// Transform polygon A into shape B's local space
-		const pageTransformB = editor.getShapePageTransform(shapeB)
-		const polygonAInShapeBSpace = pageTransformB.clone().invert().applyToPoints(polygonA)
-
-		// Check if shape B's geometry overlaps with the transformed polygon
-		const geometryB = editor.getShapeGeometry(shapeB)
-		return geometryB.overlapsPolygon(polygonAInShapeBSpace)
 	}
 }
