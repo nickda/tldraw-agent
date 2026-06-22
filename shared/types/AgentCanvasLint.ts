@@ -5,4 +5,8 @@ export interface AgentCanvasLint {
 	shapeIds: SimpleShapeId[]
 }
 
-export type AgentCanvasLintType = 'growY-on-shape' | 'overlapping-text' | 'friendless-arrow'
+export type AgentCanvasLintType =
+	| 'growY-on-shape'
+	| 'overlapping-text'
+	| 'friendless-arrow'
+	| 'overlapping-shapes'

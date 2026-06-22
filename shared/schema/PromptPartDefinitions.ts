@@ -149,6 +149,7 @@ export const CanvasLintsPartDefinition: PromptPartDefinition<CanvasLintsPart> = 
 		const growYLints = lints.filter((l) => l.type === 'growY-on-shape')
 		const overlappingTextLints = lints.filter((l) => l.type === 'overlapping-text')
 		const friendlessArrowLints = lints.filter((l) => l.type === 'friendless-arrow')
+		const overlappingShapeLints = lints.filter((l) => l.type === 'overlapping-shapes')
 
 		messages.push(
 			"[LINTER]: The following potential visual problems have been detected in the canvas. You should decide if you want to address them. Defer to your view of the canvas to decide if you need to make changes; it's very possible that you don't need to make any changes."
@@ -176,6 +177,14 @@ export const CanvasLintsPartDefinition: PromptPartDefinition<CanvasLintsPart> = 
 			const lines = [
 				"Unconnected arrows: These arrows aren't fully connected to other shapes.",
 				...shapeIds.map((id) => `  - ${id}`),
+			]
+			messages.push(lines.join('\n'))
+		}
+
+		if (overlappingShapeLints.length > 0) {
+			const lines = [
+				'Overlapping shapes: The shapes in each group substantially overlap each other (they are placed at nearly the same coordinates), which stacks them into an unreadable blob. If these were meant to be separate parts of a drawing, give each shape its own distinct x, y so they sit side by side and form a recognizable picture. Use the `move` action to spread them out.',
+				...overlappingShapeLints.map((lint) => `  - ${lint.shapeIds.join(', ')}`),
 			]
 			messages.push(lines.join('\n'))
 		}
