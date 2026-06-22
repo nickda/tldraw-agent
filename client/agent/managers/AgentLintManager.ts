@@ -147,6 +147,7 @@ export class AgentLintManager extends BaseAgentManager {
 		const growYShapes = this.getShapesWithGrowY(shapes)
 		const overlappingTextGroups = this.getOverlappingTextGroups(shapes)
 		const friendlessArrows = this.getFriendlessArrows(shapes)
+		const overlappingShapeGroups = this.getOverlappingShapeGroups(shapes)
 
 		// Convert shapes to lints (converting shape IDs to strings)
 		for (const shape of growYShapes) {
@@ -167,6 +168,13 @@ export class AgentLintManager extends BaseAgentManager {
 			lints.push({
 				type: 'friendless-arrow',
 				shapeIds: [convertTldrawIdToSimpleId(arrow.id)],
+			})
+		}
+
+		for (const group of overlappingShapeGroups) {
+			lints.push({
+				type: 'overlapping-shapes',
+				shapeIds: group.map((shape) => convertTldrawIdToSimpleId(shape.id)),
 			})
 		}
 
@@ -264,6 +272,80 @@ export class AgentLintManager extends BaseAgentManager {
 			if (group.length >= 2) {
 				groups.push(group)
 			}
+		}
+
+		return groups
+	}
+
+	/**
+	 * Get groups of shapes that substantially overlap each other, regardless of
+	 * whether they contain text. This catches the common small-model failure of
+	 * placing several shapes at (nearly) the same coordinates so they stack into
+	 * an unreadable blob.
+	 *
+	 * Intentional containment (a small shape nested inside a much larger one, like
+	 * a door inside a house body) is NOT flagged: we skip a pair when one shape's
+	 * page-bounds area is a small fraction of the other's. Arrows are skipped
+	 * (they have their own lint and are meant to touch shapes).
+	 */
+	private getOverlappingShapeGroups(shapes: TLShape[]): TLShape[][] {
+		const { editor } = this.agent
+		const groups: TLShape[][] = []
+
+		const candidates = shapes.filter((shape) => shape.type !== 'arrow')
+		if (candidates.length < 2) return groups
+
+		// A pair counts as a "blob" overlap only when the shapes are of comparable
+		// size. If one is much smaller than the other, treat it as intentional
+		// containment and skip. 0.4 = the smaller must be at least 40% of the
+		// larger's bounds area to be flagged.
+		const CONTAINMENT_AREA_RATIO = 0.4
+
+		const boundsArea = (shape: TLShape): number => {
+			const b = editor.getShapePageBounds(shape)
+			return b ? b.w * b.h : 0
+		}
+
+		const parent = new Map<TLShape, TLShape>()
+		const find = (shape: TLShape): TLShape => {
+			if (!parent.has(shape)) parent.set(shape, shape)
+			const p = parent.get(shape)!
+			if (p !== shape) parent.set(shape, find(p))
+			return parent.get(shape)!
+		}
+		const union = (a: TLShape, b: TLShape) => {
+			const ra = find(a)
+			const rb = find(b)
+			if (ra !== rb) parent.set(rb, ra)
+		}
+
+		for (let i = 0; i < candidates.length; i++) {
+			const shapeA = candidates[i]
+			const areaA = boundsArea(shapeA)
+			for (let j = i + 1; j < candidates.length; j++) {
+				const shapeB = candidates[j]
+				if (!this.shapesOverlap(shapeA, shapeB)) continue
+
+				// Skip intentional containment (one shape much smaller than the other).
+				const areaB = boundsArea(shapeB)
+				const larger = Math.max(areaA, areaB)
+				const smaller = Math.min(areaA, areaB)
+				if (larger > 0 && smaller / larger < CONTAINMENT_AREA_RATIO) continue
+
+				union(shapeA, shapeB)
+			}
+		}
+
+		const rootGroups = new Map<TLShape, TLShape[]>()
+		for (const shape of candidates) {
+			if (!parent.has(shape)) continue // never overlapped anything
+			const root = find(shape)
+			if (!rootGroups.has(root)) rootGroups.set(root, [])
+			rootGroups.get(root)!.push(shape)
+		}
+
+		for (const [, group] of rootGroups) {
+			if (group.length >= 2) groups.push(group)
 		}
 
 		return groups
