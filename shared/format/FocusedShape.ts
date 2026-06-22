@@ -154,6 +154,26 @@ export type FocusedShape = z.infer<typeof FocusedShapeSchema>
 
 export type FocusedShapePartial = Partial<FocusedShape>
 
+// Shapes the agent is allowed to CREATE (and update). This deliberately excludes:
+// - `draw`: freeform strokes must be made with the `pen` action, not `create`.
+//   A draw shape created via `create` has no segments and crashes the geometry
+//   layer (see CreateActionUtil). Including it in the create grammar let small
+//   models emit dozens of draw shapes for "draw a X", which were all rejected,
+//   leaving an empty canvas.
+// - `unknown`: by definition the agent cannot create these.
+// FocusedShapeSchema (above) keeps the full set for PERCEIVING existing shapes
+// (the agent can still see and move draw/unknown shapes it didn't create).
+const CREATABLE_SHAPES = [
+	FocusedGeoShape,
+	FocusedLineShape,
+	FocusedTextShape,
+	FocusedArrowShape,
+	FocusedNoteShape,
+] as const
+export const CreatableShapeSchema = z.union(CREATABLE_SHAPES)
+
+export type CreatableShape = z.infer<typeof CreatableShapeSchema>
+
 /**
  * Extract all shape type names from the schema
  */
