@@ -10,7 +10,7 @@ import { Streaming } from '../../shared/types/Streaming'
 import { ModelEnvironment } from '../environment'
 import { buildSystemPrompt } from '../prompt/buildSystemPrompt'
 import { getModelName } from '../prompt/getModelName'
-import { buildStreamConfig } from './buildStreamConfig'
+import { buildStreamConfig, ResponseFormat } from './buildStreamConfig'
 import { closeAndParseJson } from './closeAndParseJson'
 
 export class AgentService {
@@ -18,6 +18,7 @@ export class AgentService {
 	anthropic: AnthropicProvider
 	google: GoogleGenerativeAIProvider
 	local: OpenAIProvider
+	private localBaseURL?: string
 
 	constructor(env: ModelEnvironment) {
 		this.openai = createOpenAI({ apiKey: env.OPENAI_API_KEY })
@@ -25,7 +26,8 @@ export class AgentService {
 		this.google = createGoogleGenerativeAI({ apiKey: env.GOOGLE_API_KEY })
 		// Local koboldcpp endpoint over the OpenAI-compatible API. Reuses the OpenAI
 		// SDK, so no new inference dependency. apiKey is a noop koboldcpp ignores.
-		this.local = createOpenAI({ baseURL: env.LOCAL_MODEL_URL, apiKey: 'sk-noop' })
+		this.localBaseURL = env.LOCAL_MODEL_URL
+		this.local = createOpenAI({ baseURL: this.localBaseURL, apiKey: 'sk-noop' })
 	}
 
 	getModel(modelName: AgentModelName): LanguageModel {
@@ -37,6 +39,36 @@ export class AgentService {
 			return this.local.chat(modelDefinition.id)
 		}
 		return this[provider](modelDefinition.id)
+	}
+
+	/**
+	 * Build a local model whose requests carry a `response_format`. The AI SDK's
+	 * OpenAI provider validates provider options and drops unknown fields, so we
+	 * splice `response_format` into the request body with a custom `fetch`.
+	 * koboldcpp converts the JSON schema to a grammar, constraining the model to
+	 * valid action JSON.
+	 */
+	private getLocalModelWithResponseFormat(
+		modelId: string,
+		responseFormat: ResponseFormat
+	): LanguageModel {
+		const provider = createOpenAI({
+			baseURL: this.localBaseURL,
+			apiKey: 'sk-noop',
+			fetch: async (input, init) => {
+				if (init?.body && typeof init.body === 'string') {
+					try {
+						const body = JSON.parse(init.body)
+						body.response_format = responseFormat
+						init = { ...init, body: JSON.stringify(body) }
+					} catch {
+						// Non-JSON body: leave it untouched.
+					}
+				}
+				return fetch(input, init)
+			},
+		})
+		return provider.chat(modelId)
 	}
 
 	async *stream(prompt: AgentPrompt): AsyncGenerator<Streaming<AgentAction>> {
@@ -52,7 +84,7 @@ export class AgentService {
 
 	private async *streamActions(prompt: AgentPrompt): AsyncGenerator<Streaming<AgentAction>> {
 		const modelName = getModelName(prompt)
-		const model = this.getModel(modelName)
+		let model = this.getModel(modelName)
 
 		if (typeof model === 'string') {
 			throw new Error('Model is a string, not a LanguageModel')
@@ -67,10 +99,16 @@ export class AgentService {
 			throw new Error(`Model ${model.modelId} is not in AGENT_MODEL_DEFINITIONS`)
 		}
 
-		const { messages, providerOptions, canForceResponseStart } = buildStreamConfig(
+		const { messages, providerOptions, canForceResponseStart, responseFormat } = buildStreamConfig(
 			prompt,
 			modelDefinition
 		)
+
+		// Local path: rebuild the model so its requests carry the schema-constrained
+		// response_format koboldcpp needs to emit valid action JSON.
+		if (responseFormat) {
+			model = this.getLocalModelWithResponseFormat(model.modelId, responseFormat)
+		}
 
 		// Log an estimated prompt token count for the local path, so an operator can
 		// confirm the system prompt fits the koboldcpp --contextsize before it is

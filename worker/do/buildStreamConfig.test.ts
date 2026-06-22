@@ -74,6 +74,28 @@ describe('buildStreamConfig', () => {
 		expect(canForceResponseStart).toBe(false)
 	})
 
+	test('local model carries a schema-constrained response_format', () => {
+		const def = getAgentModelDefinition('local')
+		const { responseFormat } = buildStreamConfig(prompt, def)
+
+		expect(responseFormat?.type).toBe('json_schema')
+		expect(responseFormat?.json_schema.name).toBe('agent_actions')
+		// The schema is the action-response object: { actions: [...] }.
+		const schema = responseFormat?.json_schema.schema as {
+			type: string
+			properties: Record<string, unknown>
+		}
+		expect(schema.type).toBe('object')
+		expect(schema.properties).toHaveProperty('actions')
+	})
+
+	test('cloud models do not set a response_format (prompt-steered JSON)', () => {
+		for (const name of ['claude-sonnet-4-5', 'gemini-3-flash-preview', 'gpt-5.2-2025-12-11'] as const) {
+			const { responseFormat } = buildStreamConfig(prompt, getAgentModelDefinition(name))
+			expect(responseFormat).toBeUndefined()
+		}
+	})
+
 	test('openai model uses reasoningEffort none and no force-response-start', () => {
 		const def = getAgentModelDefinition('gpt-5.2-2025-12-11')
 		const { messages, providerOptions, canForceResponseStart } = buildStreamConfig(prompt, def)
