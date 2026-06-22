@@ -1,5 +1,5 @@
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
-export type AgentModelProvider = 'openai' | 'anthropic' | 'google'
+export type AgentModelProvider = 'openai' | 'anthropic' | 'google' | 'local'
 
 export interface AgentModelDefinition {
 	name: AgentModelName
@@ -54,6 +54,17 @@ export const AGENT_MODEL_DEFINITIONS = {
 		name: 'gpt-5.2-2025-12-11',
 		id: 'gpt-5.2-2025-12-11',
 		provider: 'openai',
+	},
+
+	// Local model served by koboldcpp over its OpenAI-compatible endpoint.
+	// `id` is a don't-care: koboldcpp serves whatever GGUF is loaded and reports
+	// its own model id back. Prefill is off; small local models do not handle an
+	// assistant-prefill turn reliably.
+	local: {
+		name: 'local',
+		id: 'local',
+		provider: 'local',
+		supportsPrefill: false,
 	},
 } as const
 
