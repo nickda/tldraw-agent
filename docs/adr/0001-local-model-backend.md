@@ -37,9 +37,9 @@ fixes land in both paths.
 
 Considered and rejected:
 
-- **A — `wrangler dev` (workerd) on the Pi.** Keeps a Cloudflare-shaped
+- **A, `wrangler dev` (workerd) on the Pi.** Keeps a Cloudflare-shaped
   dependency on an offline device; emulator overhead on weak ARM CPU.
-- **C — client-only, browser calls the model directly.** Loses the worker's
+- **C, client-only, browser calls the model directly.** Loses the worker's
   prompt-building logic and exposes the model endpoint to the browser.
 - **Separate repo fork.** Forks the maintenance burden; fixes never flow back.
 
@@ -55,7 +55,7 @@ Considered and rejected:
   `'openai.responses'`, etc.). The local model resolves to an `openai.*`
   provider string, so for the local path we must, keyed on
   `modelDefinition.provider === 'local'`:
-  - **Bypass the `isValidModelName(model.modelId)` check** (hard blocker —
+  - **Bypass the `isValidModelName(model.modelId)` check** (hard blocker:
     koboldcpp reports its own loaded model id, which is not in
     `AGENT_MODEL_DEFINITIONS`).
   - Strip `providerOptions.openai` / `reasoningEffort` (koboldcpp does not
