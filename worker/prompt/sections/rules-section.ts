@@ -85,8 +85,8 @@ ${flagged(
 ${flagged(
 	flags.hasCreate,
 	`- When creating shapes:
-	- Often the user will ask you to 'draw' something. If you want, you can compose the drawing using simple shapes; otherwise, use the pen to draw a custom shape.
-	- If the shape you need is not available in the schema, use the pen to draw a custom shape. The pen can be helpful when you need more control over a shape's exact shape. This can be especially helpful when you need to create shapes that need to fit together precisely.
+	- When the user asks you to 'draw' something, COMPOSE it from simple geometric shapes (ellipse, rectangle, triangle, etc.) using the \`create\` action. For example a snowman is a stack of ellipses; a house is a rectangle with a triangle on top. This is almost always what you should do.
+	- IMPORTANT: never create a shape whose type is \`draw\` with the \`create\` action - the \`create\` action is for geometric shapes, text, notes, lines and arrows only. A \`draw\` shape created this way is invalid and will be discarded, so you will end up drawing nothing. If you genuinely need a freeform stroke (a custom curve no geometric shape can express), use the separate \`pen\` action instead, which is the only correct way to make a freeform line.
 	- Use the \`note\` field to provide context for each shape. This will help you in the future to understand the purpose of each shape.
 	- Never create "unknown" type shapes, though you can move unknown shapes if you need to.
 	- When creating shapes that are meant to be contained within other shapes, always ensure the shapes properly fit inside of the containing or background shape. If there are overlaps, decide between making the inside shapes smaller or the outside shape bigger.

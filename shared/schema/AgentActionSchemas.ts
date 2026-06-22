@@ -1,7 +1,7 @@
 import z from 'zod'
 import { FocusedColor } from '../format/FocusedColor'
 import { FocusedFillSchema } from '../format/FocusedFill'
-import { FocusedShapeSchema, FocusedTextAnchorSchema } from '../format/FocusedShape'
+import { CreatableShapeSchema, FocusedTextAnchorSchema } from '../format/FocusedShape'
 import { SimpleShapeIdSchema, TodoIdSchema } from '../types/ids-schema'
 
 /**
@@ -102,7 +102,7 @@ export const CreateAction = z
 	.object({
 		_type: z.literal('create'),
 		intent: z.string(),
-		shape: FocusedShapeSchema,
+		shape: CreatableShapeSchema,
 	})
 	.meta({ title: 'Create', description: 'The AI creates a new shape.' })
 
@@ -363,7 +363,7 @@ export const UpdateAction = z
 	.object({
 		_type: z.literal('update'),
 		intent: z.string(),
-		update: FocusedShapeSchema,
+		update: CreatableShapeSchema,
 	})
 	.meta({
 		title: 'Update',
