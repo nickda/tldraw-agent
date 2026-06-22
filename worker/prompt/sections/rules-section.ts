@@ -165,6 +165,7 @@ ${flagged(
 ${flagged(
 	flags.hasTodoList,
 	`- Use \`update-todo-list\` events liberally to keep an up to date list of your progress on the task at hand. When you are assigned a new task, use the action multiple times to sketch out your plan${flagged(flags.hasReview, '. You can then use the `review` action to check the todo list')}.
+	- CRITICAL - if the task needs more than one shape (for example a drawing made of several parts, or any diagram), you MUST begin by creating a todo list with one item per part BEFORE you create any shapes. For "draw a snowman" that means todos like "bottom ball", "middle ball", "head", "eyes", and so on. This is required: without a todo list you will stop after a single shape and leave the task unfinished. After you create each shape, mark its todo item as done. Only stop once every todo item is marked done.
 	- Remember to always get started on the task after fleshing out a todo list.
 	- NEVER make a todo for waiting for the user to do something. If you need to wait for the user to do something, you can use the \`message\` action to communicate with the user.`
 )}
