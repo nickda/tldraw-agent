@@ -90,13 +90,16 @@ ${flagged(
 	- Use the \`note\` field to provide context for each shape. This will help you in the future to understand the purpose of each shape.
 	- Never create "unknown" type shapes, though you can move unknown shapes if you need to.
 	- When creating shapes that are meant to be contained within other shapes, always ensure the shapes properly fit inside of the containing or background shape. If there are overlaps, decide between making the inside shapes smaller or the outside shape bigger.
-	- CRITICAL - lay shapes out in space. Every shape needs its own distinct \`x\`, \`y\` so the parts sit side by side and form a recognizable picture. NEVER give two shapes the same \`x\`, \`y\`; identical coordinates stack the shapes on top of each other into an unreadable blob. Before you emit each shape, pick coordinates that place it where that part actually belongs relative to the others (a head above a body, legs below it, and so on), and size each shape so the parts are in proportion.
-	- Worked example - "draw a simple house" laid out with distinct coordinates and sensible sizes:
-		- a \`rectangle\` body at \`x: 300, y: 300, w: 240, h: 200\`
-		- a \`triangle\` roof above it at \`x: 280, y: 180, w: 280, h: 120\`
-		- a \`rectangle\` door at the bottom center at \`x: 390, y: 400, w: 60, h: 100\`
-		- a \`rectangle\` window at \`x: 330, y: 340, w: 60, h: 60\`
-		Note how no two shapes share the same \`x\`, \`y\`, the roof sits above the body, and the door and window sit inside the body. Apply the same spatial reasoning to whatever the user asks for.`
+	- CRITICAL - lay parts out by RELATIVE PLACEMENT, not by guessing absolute coordinates. Computing correct x,y for every part by hand is error prone and usually ends with all the parts stacked on top of each other in an unreadable blob. Instead, for any drawing made of more than one part:
+		- Create the first, anchoring part (for example the body) once, with a sensible size and position.
+		- For every other part, use the \`place\` action to position it relative to a part that already exists, choosing the \`side\` (top / bottom / left / right) and \`align\` (start / center / end) that puts it where it belongs. This computes the exact coordinates for you, so the parts can never land on top of each other by accident.
+		- A part's \`referenceShapeId\` must point at a shape you have ALREADY created earlier in your actions. Order your actions so the reference always exists before you place against it.
+		- Each part still needs its own distinct \`shapeId\`. Size each part so the proportions look right.
+	- Worked example - "draw a simple snowman", built by placement:
+		- \`create\` a large \`ellipse\` "snowman-base" (the bottom ball) at a sensible position and size.
+		- \`create\` a medium \`ellipse\` "snowman-middle", then \`place\` it with \`referenceShapeId: snowman-base\`, \`side: top\`, \`align: center\`.
+		- \`create\` a small \`ellipse\` "snowman-head", then \`place\` it with \`referenceShapeId: snowman-middle\`, \`side: top\`, \`align: center\`.
+		Each part is placed relative to the previous one, so they stack cleanly into a snowman with no overlap math. Apply the same create-then-\`place\` pattern to whatever the user asks for.`
 )}
 ${flagged(
 	flags.hasCreate,
@@ -178,7 +181,7 @@ ${flagged(
 ${flagged(
 	(flags.hasDistribute || flags.hasStack || flags.hasAlign || flags.hasPlace) &&
 		(flags.hasCreate || flags.hasUpdate || flags.hasMove),
-	`- Carefully plan which action types to use. For example, the higher level events like ${[flags.hasDistribute && '`distribute`', flags.hasStack && '`stack`', flags.hasAlign && '`align`', flags.hasPlace && '`place`'].filter(Boolean).join(', ')} can at times be better than the lower level events like ${[flags.hasCreate && '`create`', flags.hasUpdate && '`update`', flags.hasMove && '`move`'].filter(Boolean).join(', ')} because they're more efficient and more accurate. If lower level control is needed, the lower level events are better because they give more precise and customizable control.`
+	`- Carefully plan which action types to use. Strongly PREFER the higher level events like ${[flags.hasDistribute && '`distribute`', flags.hasStack && '`stack`', flags.hasAlign && '`align`', flags.hasPlace && '`place`'].filter(Boolean).join(', ')} over computing absolute coordinates with ${[flags.hasCreate && '`create`', flags.hasUpdate && '`update`', flags.hasMove && '`move`'].filter(Boolean).join(', ')}: the higher level events position shapes relative to each other and compute the exact coordinates for you, which is far more accurate than guessing x,y by hand and is the reliable way to avoid shapes overlapping. Whenever a shape's position depends on another shape, use a relative-placement event rather than absolute coordinates. Reserve raw coordinates for the first anchoring shape or for cases that genuinely need precise manual control.`
 )}
 ${flagged(
 	flags.hasSelectedShapesPart,
