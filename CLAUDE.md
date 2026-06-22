@@ -1,6 +1,6 @@
 # tldraw-agent
 
-Fork of [tldraw/agent-template](https://github.com/tldraw/agent-template) adapted for Aviatrix tiger team demos. React + Cloudflare Workers. AI agent manipulates a tldraw canvas via chat.
+Fork of [tldraw/agent-template](https://github.com/tldraw/agent-template) with an added local-model backend so the agent can run offline against a local LLM (no cloud account or API keys). React + Cloudflare Workers, plus a Node + Hono backend for the local path. AI agent manipulates a tldraw canvas via chat.
 
 ## Agent skills
 
