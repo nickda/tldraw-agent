@@ -6,12 +6,30 @@ import { zodLocalePlugin } from './scripts/vite-zod-locale-plugin.js'
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
+	const zodLocale = zodLocalePlugin(
+		fileURLToPath(new URL('./scripts/zod-locales-shim.js', import.meta.url))
+	)
+
+	// Local-model backend: drop the cloudflare() plugin (workerd) and proxy /stream
+	// to the Node server in server/. Keeps vite HMR for Mac dev against koboldcpp.
+	// Default path is unchanged: cloudflare() handles /stream as before.
+	if (process.env.AGENT_BACKEND === 'local') {
+		const localServerPort = Number(process.env.LOCAL_SERVER_PORT ?? 8787)
+		return {
+			plugins: [zodLocale, react()],
+			server: {
+				proxy: {
+					'/stream': {
+						target: `http://localhost:${localServerPort}`,
+						changeOrigin: true,
+					},
+				},
+			},
+		}
+	}
+
 	return {
-		plugins: [
-			zodLocalePlugin(fileURLToPath(new URL('./scripts/zod-locales-shim.js', import.meta.url))),
-			cloudflare(),
-			react(),
-		],
+		plugins: [zodLocale, cloudflare(), react()],
 		// To allow a dev tunnel (e.g. Cloudflare tunnel, ngrok), add the hostname explicitly:
 		// server: { allowedHosts: ['your-tunnel-hostname.trycloudflare.com'] },
 	}

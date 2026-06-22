@@ -2,6 +2,22 @@
 
 ## Glossary
 
+### Backend
+The server that runs the agent loop and streams actions to the client over
+`/stream` (SSE). Two interchangeable backends share one core (`AgentService`,
+prompt builders, schemas, streaming parser):
+
+- **Cloudflare backend** — the original. Cloudflare Worker + Durable Object
+  (`worker/`), bundled by `@cloudflare/vite-plugin`. Inference goes to cloud
+  providers (Anthropic / Google / OpenAI). This is the demo/backup path.
+- **Local backend** — a Node + Hono server (`server/`) that reuses
+  `AgentService` and points inference at a **local model** served by koboldcpp
+  (OpenAI-compatible endpoint, `provider: 'local'`). Target: Raspberry Pi.
+
+Selected by `AGENT_BACKEND` (`local` → Node server + vite proxy; default →
+Cloudflare). The client always calls the relative path `/stream`; the backend
+must serve it same-origin. See ADR-0001.
+
 ### Fairy
 A named AI agent presence on the canvas. Represented as an animated SVG sprite that tracks the agent's current drawing location and expresses emotional state. A Fairy is a first-class domain entity — not a generic "cursor" or "indicator." In the single-agent v1, one Fairy corresponds to one TldrawAgent. In the multi-agent 10x vision, each agent has its own named Fairy with distinct personality.
 

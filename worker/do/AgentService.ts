@@ -1,32 +1,41 @@
 import { AnthropicProvider, createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI, GoogleGenerativeAIProvider } from '@ai-sdk/google'
 import { createOpenAI, OpenAIProvider } from '@ai-sdk/openai'
-import { LanguageModel, ModelMessage, streamText } from 'ai'
+import { LanguageModel, streamText } from 'ai'
 import { AgentModelName, getAgentModelDefinition, isValidModelName } from '../../shared/models'
 import { DebugPart } from '../../shared/schema/PromptPartDefinitions'
 import { AgentAction } from '../../shared/types/AgentAction'
 import { AgentPrompt } from '../../shared/types/AgentPrompt'
 import { Streaming } from '../../shared/types/Streaming'
-import { Environment } from '../environment'
-import { buildMessages } from '../prompt/buildMessages'
+import { ModelEnvironment } from '../environment'
 import { buildSystemPrompt } from '../prompt/buildSystemPrompt'
 import { getModelName } from '../prompt/getModelName'
+import { buildStreamConfig } from './buildStreamConfig'
 import { closeAndParseJson } from './closeAndParseJson'
 
 export class AgentService {
 	openai: OpenAIProvider
 	anthropic: AnthropicProvider
 	google: GoogleGenerativeAIProvider
+	local: OpenAIProvider
 
-	constructor(env: Environment) {
+	constructor(env: ModelEnvironment) {
 		this.openai = createOpenAI({ apiKey: env.OPENAI_API_KEY })
 		this.anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })
 		this.google = createGoogleGenerativeAI({ apiKey: env.GOOGLE_API_KEY })
+		// Local koboldcpp endpoint over the OpenAI-compatible API. Reuses the OpenAI
+		// SDK, so no new inference dependency. apiKey is a noop koboldcpp ignores.
+		this.local = createOpenAI({ baseURL: env.LOCAL_MODEL_URL, apiKey: 'sk-noop' })
 	}
 
 	getModel(modelName: AgentModelName): LanguageModel {
 		const modelDefinition = getAgentModelDefinition(modelName)
 		const provider = modelDefinition.provider
+		// koboldcpp implements the OpenAI /v1/chat/completions API, not the newer
+		// /v1/responses API the SDK defaults to. Pin the local model to chat.
+		if (provider === 'local') {
+			return this.local.chat(modelDefinition.id)
+		}
 		return this[provider](modelDefinition.id)
 	}
 
@@ -49,38 +58,30 @@ export class AgentService {
 			throw new Error('Model is a string, not a LanguageModel')
 		}
 
-		const { modelId, provider } = model
-		if (!isValidModelName(modelId)) {
-			throw new Error(`Model ${modelId} is not in AGENT_MODEL_DEFINITIONS`)
+		const modelDefinition = getAgentModelDefinition(modelName)
+
+		// For cloud providers, guard that the SDK model id is one we know about.
+		// The local path bypasses this: koboldcpp reports its own loaded model id,
+		// which is not in AGENT_MODEL_DEFINITIONS and must not throw.
+		if (modelDefinition.provider !== 'local' && !isValidModelName(model.modelId)) {
+			throw new Error(`Model ${model.modelId} is not in AGENT_MODEL_DEFINITIONS`)
 		}
 
-		const modelDefinition = getAgentModelDefinition(modelId)
-		const systemPrompt = buildSystemPrompt(prompt)
+		const { messages, providerOptions, canForceResponseStart } = buildStreamConfig(
+			prompt,
+			modelDefinition
+		)
 
-		// Build messages with provider-specific options
-		const messages: ModelMessage[] = []
-
-		// Add system prompt with Anthropic caching if applicable
-		if (provider === 'anthropic.messages') {
-			// Anthropic requires explicit cache breakpoints. We set one at the end of the
-			// system prompt to cache all system content (which generally changes together).
-			messages.push({
-				role: 'system',
-				content: systemPrompt,
-				providerOptions: {
-					anthropic: { cacheControl: { type: 'ephemeral' } },
-				},
-			})
-		} else {
-			messages.push({
-				role: 'system',
-				content: systemPrompt,
-			})
+		// Log an estimated prompt token count for the local path, so an operator can
+		// confirm the system prompt fits the koboldcpp --contextsize before it is
+		// silently truncated. Estimate only (no tokenizer): ~4 chars per token.
+		if (modelDefinition.provider === 'local') {
+			const promptChars = messages.reduce((sum, message) => {
+				const content = message.content
+				return sum + (typeof content === 'string' ? content.length : 0)
+			}, 0)
+			console.log(`[local] estimated prompt tokens: ~${Math.ceil(promptChars / 4)}`)
 		}
-
-		// Add prompt messages
-		const promptMessages = buildMessages(prompt)
-		messages.push(...promptMessages)
 
 		// Check for debug flags and log if enabled
 		const debugPart = prompt.debug as DebugPart | undefined
@@ -90,25 +91,9 @@ export class AgentService {
 				console.log('[DEBUG] System Prompt (without schema):\n', promptWithoutSchema)
 			}
 			if (debugPart.logMessages) {
-				console.log('[DEBUG] Messages:\n', JSON.stringify(promptMessages, null, 2))
+				console.log('[DEBUG] Messages:\n', JSON.stringify(messages, null, 2))
 			}
 		}
-
-		// Add the assistant message to indicate the start of the actions
-		// Some models (e.g. claude-sonnet-4-6+) do not support assistant message prefill
-		if (modelDefinition.supportsPrefill !== false) {
-			messages.push({
-				role: 'assistant',
-				content: '{"actions": [{"_type":',
-			})
-		}
-
-		// Configure thinking budgets based on model. We let models think using the think action, so we keep this as low as possible to minimize time to first token
-		// Gemini: 256 for thinking models, 0 otherwise
-		const geminiThinkingBudget = modelDefinition.thinking ? 256 : 0
-
-		// OpenAI: 'none' for non-reasoning models, 'minimal' otherwise
-		const openaiReasoningEffort = provider === 'openai.responses' ? 'none' : 'minimal'
 
 		try {
 			const { textStream } = streamText({
@@ -116,17 +101,7 @@ export class AgentService {
 				messages,
 				maxOutputTokens: 8192,
 				temperature: 0,
-				providerOptions: {
-					anthropic: {
-						thinking: { type: 'disabled' },
-					},
-					google: {
-						thinkingConfig: { thinkingBudget: geminiThinkingBudget },
-					},
-					openai: {
-						reasoningEffort: openaiReasoningEffort,
-					},
-				},
+				providerOptions,
 				onAbort() {
 					console.warn('Stream actions aborted')
 				},
@@ -136,9 +111,6 @@ export class AgentService {
 				},
 			})
 
-			const canForceResponseStart =
-				(provider === 'anthropic.messages' || provider === 'google.generative-ai') &&
-				modelDefinition.supportsPrefill !== false
 			let buffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
 			let cursor = 0
 			let maybeIncompleteAction: AgentAction | null = null
