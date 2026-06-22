@@ -89,7 +89,14 @@ ${flagged(
 	- If the shape you need is not available in the schema, use the pen to draw a custom shape. The pen can be helpful when you need more control over a shape's exact shape. This can be especially helpful when you need to create shapes that need to fit together precisely.
 	- Use the \`note\` field to provide context for each shape. This will help you in the future to understand the purpose of each shape.
 	- Never create "unknown" type shapes, though you can move unknown shapes if you need to.
-	- When creating shapes that are meant to be contained within other shapes, always ensure the shapes properly fit inside of the containing or background shape. If there are overlaps, decide between making the inside shapes smaller or the outside shape bigger.`
+	- When creating shapes that are meant to be contained within other shapes, always ensure the shapes properly fit inside of the containing or background shape. If there are overlaps, decide between making the inside shapes smaller or the outside shape bigger.
+	- CRITICAL - lay shapes out in space. Every shape needs its own distinct \`x\`, \`y\` so the parts sit side by side and form a recognizable picture. NEVER give two shapes the same \`x\`, \`y\`; identical coordinates stack the shapes on top of each other into an unreadable blob. Before you emit each shape, pick coordinates that place it where that part actually belongs relative to the others (a head above a body, legs below it, and so on), and size each shape so the parts are in proportion.
+	- Worked example - "draw a simple house" laid out with distinct coordinates and sensible sizes:
+		- a \`rectangle\` body at \`x: 300, y: 300, w: 240, h: 200\`
+		- a \`triangle\` roof above it at \`x: 280, y: 180, w: 280, h: 120\`
+		- a \`rectangle\` door at the bottom center at \`x: 390, y: 400, w: 60, h: 100\`
+		- a \`rectangle\` window at \`x: 330, y: 340, w: 60, h: 60\`
+		Note how no two shapes share the same \`x\`, \`y\`, the roof sits above the body, and the door and window sit inside the body. Apply the same spatial reasoning to whatever the user asks for.`
 )}
 ${flagged(
 	flags.hasCreate,
