@@ -10,7 +10,7 @@ Issues live in GitHub Issues (`nickda/tldraw-agent`). See `docs/agents/issue-tra
 
 ### Triage labels
 
-Default label vocabulary — `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+Default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

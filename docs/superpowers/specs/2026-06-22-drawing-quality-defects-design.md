@@ -31,7 +31,7 @@ can safely enforce them:
   Code cannot know which without modelling intent, so this stays a prompt nudge
   and the model decides.
 
-## Fix #3 — invisible white shapes (code)
+## Fix #3: invisible white shapes (code)
 
 **Location:** `client/actions/CreateActionUtil.ts`, in `sanitizeAction` (which
 already mutates the incoming `shape`).
@@ -54,7 +54,7 @@ colour enum.
 legitimate white shapes (white text, shapes already using `background`). The
 trigger is scoped exactly to the invisible-on-canvas case.
 
-## Fix #1 — size order (prompt)
+## Fix #1: size order (prompt)
 
 **Location:** `worker/prompt/sections/rules-section.ts`, the existing
 create-then-`place` snowman example plus one rule line.
@@ -69,16 +69,16 @@ the model failed to generalise.
 
 ## Out of Scope (deferred, named)
 
-- **#2 wrong colour** (e.g. a black snowman) — taste-dependent; harder; not a
+- **#2 wrong colour** (e.g. a black snowman): taste-dependent; harder; not a
   visibility invariant.
-- **#4 scattered features / #5 misplaced hat** — require placing small features
+- **#4 scattered features / #5 misplaced hat**: require placing small features
   on a specific parent part; likely at or beyond the 7B ceiling.
 - No size-inversion lint: "big shape on top" is valid for many drawings, so
   deterministic detection would false-flag.
 
 ## Testing
 
-- **#3:** unit test the sanitize rewrite — given a white solid geo shape, assert
+- **#3:** unit test the sanitize rewrite, given a white solid geo shape, assert
   it becomes `fill: 'background', color: 'grey'`; given white text or an already
   `background` shape, assert unchanged. `bun:test`, pure object mutation.
 - **#1:** not unit-testable (prompt). Verify on the Mac pass.
