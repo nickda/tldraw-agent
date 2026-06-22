@@ -38,22 +38,35 @@ app.post('/stream', async (c) => {
 
 	const encoder = new TextEncoder()
 
+	// Track whether the client has gone away. Firing a new prompt cancels the
+	// previous fetch, which closes the controller; enqueuing after that throws
+	// ERR_INVALID_STATE. The flag lets us stop pulling from the model and skip
+	// any further enqueue/close on a dead stream.
+	let cancelled = false
+
 	const readable = new ReadableStream<Uint8Array>({
 		async start(controller) {
+			const send = (payload: unknown) => {
+				if (cancelled) return
+				controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+			}
 			try {
 				for await (const change of service.stream(prompt) as AsyncGenerator<
 					Streaming<AgentAction>
 				>) {
-					controller.enqueue(encoder.encode(`data: ${JSON.stringify(change)}\n\n`))
+					if (cancelled) break
+					send(change)
 				}
 			} catch (error: any) {
 				console.error('Stream error:', error)
-				controller.enqueue(
-					encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
-				)
+				send({ error: error.message })
 			} finally {
-				controller.close()
+				if (!cancelled) controller.close()
 			}
+		},
+		cancel() {
+			// Client disconnected (e.g. user fired a new prompt). Stop streaming.
+			cancelled = true
 		},
 	})
 
