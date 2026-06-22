@@ -8,6 +8,7 @@ import { CreateAction } from '../../shared/schema/AgentActionSchemas'
 import { Streaming } from '../../shared/types/Streaming'
 import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
+import { fixInvisibleWhiteShape } from './fixInvisibleWhiteShape'
 
 export const CreateActionUtil = registerActionUtil(
 	class CreateActionUtil extends AgentActionUtil<CreateAction> {
@@ -25,6 +26,11 @@ export const CreateActionUtil = registerActionUtil(
 
 			// If there's no shape yet, return action (will be filtered in applyAction)
 			if (!shape) return action
+
+			// Rewrite invisible white shapes (white solid/tint/none, non-text) to a
+			// visible background fill with a grey border, so white objects like snow
+			// don't vanish against the white canvas.
+			fixInvisibleWhiteShape(shape)
 
 			// Ensure the created shape has a unique ID (only if shapeId is present)
 			if (shape.shapeId) {

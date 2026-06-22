@@ -94,12 +94,12 @@ ${flagged(
 		- Create the first, anchoring part (for example the body) once, with a sensible size and position.
 		- For every other part, use the \`place\` action to position it relative to a part that already exists, choosing the \`side\` (top / bottom / left / right) and \`align\` (start / center / end) that puts it where it belongs. This computes the exact coordinates for you, so the parts can never land on top of each other by accident.
 		- A part's \`referenceShapeId\` must point at a shape you have ALREADY created earlier in your actions. Order your actions so the reference always exists before you place against it.
-		- Each part still needs its own distinct \`shapeId\`. Size each part so the proportions look right.
-	- Worked example - "draw a simple snowman", built by placement:
-		- \`create\` a large \`ellipse\` "snowman-base" (the bottom ball) at a sensible position and size.
-		- \`create\` a medium \`ellipse\` "snowman-middle", then \`place\` it with \`referenceShapeId: snowman-base\`, \`side: top\`, \`align: center\`.
-		- \`create\` a small \`ellipse\` "snowman-head", then \`place\` it with \`referenceShapeId: snowman-middle\`, \`side: top\`, \`align: center\`.
-		Each part is placed relative to the previous one, so they stack cleanly into a snowman with no overlap math. Apply the same create-then-\`place\` pattern to whatever the user asks for.`
+		- Each part still needs its own distinct \`shapeId\`. Size each part so the proportions look right. When you stack parts that should taper (a snowman, a tree, a tower), each higher shape's \`w\` and \`h\` must be SMALLER than the shape directly below it. Decide the size of each part as you create it; do not give them all the same size.
+	- Worked example - "draw a simple snowman", built by placement (note the sizes get smaller from bottom to top):
+		- \`create\` a large \`ellipse\` "snowman-base" (the bottom ball), \`w: 220, h: 220\`, at a sensible position.
+		- \`create\` a medium \`ellipse\` "snowman-middle", \`w: 160, h: 160\`, then \`place\` it with \`referenceShapeId: snowman-base\`, \`side: top\`, \`align: center\`.
+		- \`create\` a small \`ellipse\` "snowman-head", \`w: 110, h: 110\`, then \`place\` it with \`referenceShapeId: snowman-middle\`, \`side: top\`, \`align: center\`.
+		Each part is placed relative to the previous one and is smaller than the one below it, so they stack cleanly into a snowman that tapers toward the top, with no overlap math. Apply the same create-then-\`place\` pattern to whatever the user asks for.`
 )}
 ${flagged(
 	flags.hasCreate,
