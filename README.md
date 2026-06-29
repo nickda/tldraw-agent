@@ -37,6 +37,40 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 We recommend using Anthropic for best results. Get your API key from the [Anthropic dashboard](https://console.anthropic.com/settings/keys).
 
+### Amazon Bedrock
+
+Bedrock runs the same Claude models over AWS instead of an Anthropic API key.
+The model dropdown lists `bedrock-claude-sonnet-4-6` and `bedrock-claude-opus-4-8`
+(us-west-2 inference profiles). Auth is either a bearer token or temporary SSO
+credentials; the bearer token wins when both are present.
+
+Bearer token (long-lived Bedrock API key):
+
+```
+AWS_BEARER_TOKEN_BEDROCK=your_bedrock_api_key
+AWS_REGION=us-west-2
+```
+
+SSO credentials (temporary, expire in hours):
+
+```bash
+aws sso login --profile ClaudeBedrockAccess
+eval "$(aws configure export-credentials --profile ClaudeBedrockAccess --format env)"
+unset AWS_BEARER_TOKEN_BEDROCK   # else the bearer token takes precedence over SigV4
+```
+
+Run the Node server fully on Bedrock (every prompt → Bedrock, koboldcpp never
+contacted):
+
+```bash
+AWS_REGION=us-west-2 AGENT_BACKEND=bedrock PORT=8787 npm start
+```
+
+Pick the model with `AGENT_BEDROCK_MODEL` (default `bedrock-claude-sonnet-4-6`).
+`AWS_REGION` must match the model-id prefix (`us.*` → us-west-2) and the region
+the IAM identity is authorized to invoke in. The `ClaudeBedrockAccess` SSO role
+is authorized for us-west-2 only; other regions return `403 AccessDeniedException`.
+
 ## Local development
 
 Install dependencies with `yarn` or `npm install`.

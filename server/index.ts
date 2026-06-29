@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { AgentAction } from '../shared/types/AgentAction'
 import { AgentPrompt } from '../shared/types/AgentPrompt'
 import { Streaming } from '../shared/types/Streaming'
+import { AgentModelName, isValidModelName, getAgentModelDefinition } from '../shared/models'
 import { AgentService } from '../worker/do/AgentService'
 import { ModelEnvironment } from '../worker/environment'
 
@@ -20,7 +21,41 @@ const env: ModelEnvironment = {
 	OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? '',
 	ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
 	GOOGLE_API_KEY: process.env.GOOGLE_API_KEY ?? '',
+	// Bedrock auth, only consumed when a `bedrock-*` model runs. Bearer token
+	// (Claude Code's AWS_BEARER_TOKEN_BEDROCK) takes precedence; otherwise the
+	// SigV4 triple from `aws configure export-credentials` (temporary SSO creds).
+	AWS_BEARER_TOKEN_BEDROCK: process.env.AWS_BEARER_TOKEN_BEDROCK ?? '',
+	AWS_REGION: process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? '',
+	AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ?? '',
+	AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ?? '',
+	AWS_SESSION_TOKEN: process.env.AWS_SESSION_TOKEN ?? '',
 	LOCAL_MODEL_URL: process.env.LOCAL_MODEL_URL ?? 'http://localhost:5001/v1',
+}
+
+// Backend mode, set by AGENT_BACKEND. Two values:
+//   'local'   (default) koboldcpp path. Every prompt is forced to the `local`
+//             model except an explicit `bedrock-*` selection, which passes
+//             through so local vs Bedrock can be compared in one UI.
+//   'bedrock' fully Bedrock. Every prompt is forced to AGENT_BEDROCK_MODEL (or
+//             the default below). koboldcpp is never contacted; no local model
+//             server need run.
+const AGENT_BACKEND = process.env.AGENT_BACKEND === 'bedrock' ? 'bedrock' : 'local'
+
+// Which Bedrock model the 'bedrock' backend pins every prompt to. Override with
+// AGENT_BEDROCK_MODEL (must be a defined `bedrock-*` model name).
+const BEDROCK_MODEL: AgentModelName = (() => {
+	const requested = process.env.AGENT_BEDROCK_MODEL
+	if (isValidModelName(requested) && getAgentModelDefinition(requested).provider === 'bedrock') {
+		return requested
+	}
+	return 'bedrock-claude-sonnet-4-6'
+})()
+
+// Whether the client's selected model is allowed through unchanged in 'local'
+// mode. Bedrock selections run as-is; everything else collapses to `local`.
+function isPassthroughModel(modelName: string | undefined): boolean {
+	if (!isValidModelName(modelName)) return false
+	return getAgentModelDefinition(modelName).provider === 'bedrock'
 }
 
 const service = new AgentService(env)
@@ -30,10 +65,15 @@ const app = new Hono()
 app.post('/stream', async (c) => {
 	const prompt = (await c.req.json()) as AgentPrompt
 
-	// Force the local model regardless of what the client selected. The client UI
-	// has no local option and always sends a cloud model name.
+	// Pin the model per backend mode. In 'bedrock' mode every prompt runs on the
+	// chosen Bedrock model. In 'local' mode force `local` unless the client picked
+	// a passthrough (bedrock) model.
 	if (prompt.modelName) {
-		prompt.modelName.modelName = 'local'
+		if (AGENT_BACKEND === 'bedrock') {
+			prompt.modelName.modelName = BEDROCK_MODEL
+		} else if (!isPassthroughModel(prompt.modelName.modelName)) {
+			prompt.modelName.modelName = 'local'
+		}
 	}
 
 	const encoder = new TextEncoder()
@@ -96,6 +136,10 @@ if (serveAssets) {
 
 const port = Number(process.env.PORT ?? 8787)
 serve({ fetch: app.fetch, port }, (info) => {
-	console.log(`tldraw-agent local backend listening on http://localhost:${info.port}`)
-	console.log(`LOCAL_MODEL_URL=${env.LOCAL_MODEL_URL}`)
+	console.log(`tldraw-agent ${AGENT_BACKEND} backend listening on http://localhost:${info.port}`)
+	if (AGENT_BACKEND === 'bedrock') {
+		console.log(`AGENT_BEDROCK_MODEL=${BEDROCK_MODEL} AWS_REGION=${env.AWS_REGION}`)
+	} else {
+		console.log(`LOCAL_MODEL_URL=${env.LOCAL_MODEL_URL}`)
+	}
 })

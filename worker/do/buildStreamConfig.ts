@@ -69,6 +69,16 @@ export function buildStreamConfig(
 				anthropic: { cacheControl: { type: 'ephemeral' } },
 			},
 		})
+	} else if (provider === 'bedrock') {
+		// Bedrock expresses the same cache breakpoint as a `cachePoint` under the
+		// `bedrock` provider key rather than Anthropic's `cacheControl`.
+		messages.push({
+			role: 'system',
+			content: systemPrompt,
+			providerOptions: {
+				bedrock: { cachePoint: { type: 'default' } },
+			},
+		})
 	} else {
 		messages.push({
 			role: 'system',
