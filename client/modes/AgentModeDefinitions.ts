@@ -5,11 +5,14 @@ import type { PromptPart } from '../../shared/types/PromptPart'
 import { AddDetailActionUtil } from '../actions/AddDetailActionUtil'
 import { AlignActionUtil } from '../actions/AlignActionUtil'
 import { BringToFrontActionUtil } from '../actions/BringToFrontActionUtil'
+import { ClaimItemActionUtil } from '../actions/ClaimItemActionUtil'
 import { ClearActionUtil } from '../actions/ClearActionUtil'
 import { CountryInfoActionUtil } from '../actions/CountryInfoActionUtil'
 import { CountShapesActionUtil } from '../actions/CountShapesActionUtil'
 import { CreateActionUtil } from '../actions/CreateActionUtil'
+import { DelegateFixActionUtil } from '../actions/DelegateFixActionUtil'
 import { DeleteActionUtil } from '../actions/DeleteActionUtil'
+import { DispatchExecutorsActionUtil } from '../actions/DispatchExecutorsActionUtil'
 import { DistributeActionUtil } from '../actions/DistributeActionUtil'
 import { LabelActionUtil } from '../actions/LabelActionUtil'
 import { MessageActionUtil } from '../actions/MessageActionUtil'
@@ -26,6 +29,7 @@ import { ThinkActionUtil } from '../actions/ThinkActionUtil'
 import { UnknownActionUtil } from '../actions/UnknownActionUtil'
 import { UpdateActionUtil } from '../actions/UpdateActionUtil'
 import { UpsertTodoListItemActionUtil } from '../actions/UpsertTodoListItemActionUtil'
+import { WritePlanActionUtil } from '../actions/WritePlanActionUtil'
 
 // Import prompt part utils to ensure they register themselves
 import { AgentViewportBoundsPartUtil } from '../parts/AgentViewportBoundsPartUtil'
@@ -167,6 +171,116 @@ export const AGENT_MODE_DEFINITIONS = [
 			// External APIs
 			CountryInfoActionUtil.type,
 			CountShapesActionUtil.type,
+
+			// Internal (required)
+			UnknownActionUtil.type,
+		],
+	},
+	{
+		// Team Mode: the Planner. Decomposes the request into the Shared Plan,
+		// dispatches Executors, then reviews their work. Its action set omits every
+		// draw action so the Planner physically cannot draw: layout is its job,
+		// drawing is the Executor's.
+		type: 'planning',
+		active: true,
+
+		// Same information parts as `working`: the Planner sees the canvas to plan
+		// and review. Only the `actions` set differs by role.
+		parts: [
+			ModePartUtil.type,
+			DebugPartUtil.type,
+			ModelNamePartUtil.type,
+			MessagesPartUtil.type,
+			DataPartUtil.type,
+			ContextItemsPartUtil.type,
+			ScreenshotPartUtil.type,
+			UserViewportBoundsPartUtil.type,
+			AgentViewportBoundsPartUtil.type,
+			BlurryShapesPartUtil.type,
+			PeripheralShapesPartUtil.type,
+			SelectedShapesPartUtil.type,
+			ChatHistoryPartUtil.type,
+			UserActionHistoryPartUtil.type,
+			TodoListPartUtil.type,
+			CanvasLintsPartUtil.type,
+			TimePartUtil.type,
+		],
+
+		actions: [
+			// Communication
+			MessageActionUtil.type,
+			ThinkActionUtil.type,
+
+			// Planning and review
+			WritePlanActionUtil.type,
+			DispatchExecutorsActionUtil.type,
+			DelegateFixActionUtil.type,
+			ReviewActionUtil.type,
+			SetMyViewActionUtil.type,
+
+			// Internal (required)
+			UnknownActionUtil.type,
+		],
+	},
+	{
+		// Team Mode: an Executor. Claims Plan Items from the Shared Plan and draws
+		// them inside the claimed region. Its action set omits the plan-writing
+		// actions (writePlan/dispatchExecutors/delegateFix) so an Executor cannot
+		// rewrite the plan.
+		type: 'executing',
+		active: true,
+
+		// Same information parts as `working`: the Executor sees the canvas to draw.
+		// Only the `actions` set differs by role.
+		parts: [
+			ModePartUtil.type,
+			DebugPartUtil.type,
+			ModelNamePartUtil.type,
+			MessagesPartUtil.type,
+			DataPartUtil.type,
+			ContextItemsPartUtil.type,
+			ScreenshotPartUtil.type,
+			UserViewportBoundsPartUtil.type,
+			AgentViewportBoundsPartUtil.type,
+			BlurryShapesPartUtil.type,
+			PeripheralShapesPartUtil.type,
+			SelectedShapesPartUtil.type,
+			ChatHistoryPartUtil.type,
+			UserActionHistoryPartUtil.type,
+			TodoListPartUtil.type,
+			CanvasLintsPartUtil.type,
+			TimePartUtil.type,
+		],
+
+		actions: [
+			// Communication
+			MessageActionUtil.type,
+			ThinkActionUtil.type,
+			SetMyViewActionUtil.type,
+
+			// Shared Plan
+			ClaimItemActionUtil.type,
+
+			// Individual shapes
+			CreateActionUtil.type,
+			DeleteActionUtil.type,
+			UpdateActionUtil.type,
+			LabelActionUtil.type,
+			MoveActionUtil.type,
+
+			// Groups of shapes
+			PlaceActionUtil.type,
+			BringToFrontActionUtil.type,
+			SendToBackActionUtil.type,
+			RotateActionUtil.type,
+			ResizeActionUtil.type,
+			AlignActionUtil.type,
+			DistributeActionUtil.type,
+			StackActionUtil.type,
+			ClearActionUtil.type,
+
+			// Drawing
+			PenActionUtil.type,
 
 			// Internal (required)
 			UnknownActionUtil.type,

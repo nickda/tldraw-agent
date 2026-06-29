@@ -96,6 +96,10 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.mode.setMode('idling')
 		},
 	},
+	// Team Mode roles. No lifecycle behaviour yet; the coordinator that drives
+	// these modes (dispatch, claim loop, Review Loop) is wired in a later slice.
+	planning: {},
+	executing: {},
 }
 
 /**

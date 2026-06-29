@@ -383,3 +383,65 @@ export const UnknownAction = z
 	})
 
 export type UnknownAction = z.infer<typeof UnknownAction>
+
+// ============================================================================
+// Team Mode actions
+//
+// Role-scoped actions for the multi-agent Team Mode. They form the grammar of
+// the `planning` and `executing` modes: the Planner can write/dispatch/delegate
+// but cannot draw, the Executor can claim and draw but cannot rewrite the plan.
+// These are stubs for now (no fields beyond `_type`, like the existing
+// ClearAction); their behaviour is wired in later slices.
+// ============================================================================
+
+// Write Plan Action (Planner only)
+export const WritePlanAction = z
+	.object({
+		_type: z.literal('writePlan'),
+	})
+	.meta({
+		title: 'Write Plan',
+		description:
+			'The Planner decomposes the user request into the Shared Plan, deciding the layout up front so each Plan Item owns a disjoint region of the canvas.',
+	})
+
+export type WritePlanAction = z.infer<typeof WritePlanAction>
+
+// Dispatch Executors Action (Planner only)
+export const DispatchExecutorsAction = z
+	.object({
+		_type: z.literal('dispatchExecutors'),
+	})
+	.meta({
+		title: 'Dispatch Executors',
+		description:
+			'The Planner dispatches the Executor Fairies to start claiming and drawing Plan Items from the Shared Plan.',
+	})
+
+export type DispatchExecutorsAction = z.infer<typeof DispatchExecutorsAction>
+
+// Delegate Fix Action (Planner only)
+export const DelegateFixAction = z
+	.object({
+		_type: z.literal('delegateFix'),
+	})
+	.meta({
+		title: 'Delegate Fix',
+		description:
+			'The Planner directs a specific Executor to fix a specific defect by reopening or adding a Plan Item assigned to that Executor.',
+	})
+
+export type DelegateFixAction = z.infer<typeof DelegateFixAction>
+
+// Claim Item Action (Executor only)
+export const ClaimItemAction = z
+	.object({
+		_type: z.literal('claimItem'),
+	})
+	.meta({
+		title: 'Claim Item',
+		description:
+			'An Executor claims the next available Plan Item from the Shared Plan so that it can draw it inside the item region.',
+	})
+
+export type ClaimItemAction = z.infer<typeof ClaimItemAction>
