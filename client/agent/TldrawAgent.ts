@@ -634,7 +634,8 @@ export class TldrawAgent {
 								let actResult: ReturnType<typeof this.actions.act> | null = null
 								try {
 									actResult = this.actions.act(transformedAction, helpers)
-								} catch {
+								} catch (error) {
+									console.warn('Skipping action; act() threw:', error)
 									incompleteDiff = null
 									return
 								}

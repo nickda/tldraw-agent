@@ -1,5 +1,5 @@
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
-export type AgentModelProvider = 'openai' | 'anthropic' | 'google' | 'local'
+export type AgentModelProvider = 'openai' | 'anthropic' | 'google' | 'local' | 'bedrock'
 
 export interface AgentModelDefinition {
 	name: AgentModelName
@@ -54,6 +54,29 @@ export const AGENT_MODEL_DEFINITIONS = {
 		name: 'gpt-5.2-2025-12-11',
 		id: 'gpt-5.2-2025-12-11',
 		provider: 'openai',
+	},
+
+	// Amazon Bedrock models. Same Claude models Claude Code runs, reached over the
+	// Bedrock runtime. Auth is either a bearer token (AWS_BEARER_TOKEN_BEDROCK) or
+	// SigV4 from temporary SSO credentials; see AgentService. `id` is a region-scoped
+	// inference profile id, which is why it differs from `name` (like the local
+	// provider) and must bypass the AGENT_MODEL_DEFINITIONS id guard. Profile ids
+	// are region-specific; these are the US (us-west-2) profiles, matching the
+	// ClaudeBedrockAccess SSO role whose IAM policy only grants us-west-2 invoke.
+	// Prefill is off: newer Claude models reject it, matching the Anthropic-provider
+	// claude-sonnet-4-6 entry above.
+	'bedrock-claude-sonnet-4-6': {
+		name: 'bedrock-claude-sonnet-4-6',
+		id: 'us.anthropic.claude-sonnet-4-6',
+		provider: 'bedrock',
+		supportsPrefill: false,
+	},
+
+	'bedrock-claude-opus-4-8': {
+		name: 'bedrock-claude-opus-4-8',
+		id: 'us.anthropic.claude-opus-4-8',
+		provider: 'bedrock',
+		supportsPrefill: false,
 	},
 
 	// Local model served by koboldcpp over its OpenAI-compatible endpoint.

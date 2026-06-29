@@ -9,7 +9,8 @@ prompt builders, schemas, streaming parser):
 
 - **Cloudflare backend**: the original. Cloudflare Worker + Durable Object
   (`worker/`), bundled by `@cloudflare/vite-plugin`. Inference goes to cloud
-  providers (Anthropic / Google / OpenAI). This is the demo/backup path.
+  providers (Anthropic / Google / OpenAI / Bedrock). This is the demo/backup
+  path.
 - **Local backend**: a Node + Hono server (`server/`) that reuses
   `AgentService` and points inference at a **local model** served by koboldcpp
   (OpenAI-compatible endpoint, `provider: 'local'`). Target: Raspberry Pi.
@@ -17,6 +18,23 @@ prompt builders, schemas, streaming parser):
 Selected by `AGENT_BACKEND` (`local` → Node server + vite proxy; default →
 Cloudflare). The client always calls the relative path `/stream`; the backend
 must serve it same-origin. See ADR-0001.
+
+The Node server has a third `AGENT_BACKEND=bedrock` mode that pins every prompt
+to a Bedrock model (`AGENT_BEDROCK_MODEL`, default `bedrock-claude-sonnet-4-6`)
+and never contacts koboldcpp. See ADR-0002.
+
+### Bedrock provider
+A cloud provider (`provider: 'bedrock'`), not a separate backend: the same
+Claude models Claude Code runs, reached over Amazon Bedrock via
+`@ai-sdk/amazon-bedrock`. Model ids are **region-scoped inference profile ids**
+(`us.anthropic.claude-...`); the `id` differs from the `name` (like `local`), so
+the bedrock path bypasses the `isValidModelName(model.modelId)` guard. Auth is
+either a bearer token (`AWS_BEARER_TOKEN_BEDROCK`, takes precedence) or SigV4
+from temporary SSO credentials (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` /
+`AWS_SESSION_TOKEN`). `AWS_REGION` must match the model-id prefix and the region
+the IAM identity is authorized to invoke in. Caching uses
+`providerOptions.bedrock.cachePoint`, not Anthropic's `cacheControl`. See
+ADR-0002.
 
 ### Fairy
 A named AI agent presence on the canvas. Represented as an animated SVG sprite that tracks the agent's current drawing location and expresses emotional state. A Fairy is a first-class domain entity, not a generic "cursor" or "indicator." In the single-agent v1, one Fairy corresponds to one TldrawAgent. In the multi-agent 10x vision, each agent has its own named Fairy with distinct personality.
