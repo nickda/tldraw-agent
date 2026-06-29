@@ -1,5 +1,37 @@
 # tldraw agent
 
+## Quick start (Amazon Bedrock)
+
+Run the app fully on Bedrock (same Claude models as Claude Code, no Anthropic API key). Two auth options; the bearer token takes precedence when both are set.
+
+**Bearer token** (long-lived Bedrock API key):
+
+```bash
+cd ~/Code/nick-dev/tldraw-agent
+npm install
+AWS_BEARER_TOKEN_BEDROCK=your_bedrock_api_key \
+AWS_REGION=us-west-2 \
+AGENT_BACKEND=bedrock \
+PORT=8787 \
+npm start
+```
+
+**SSO credentials** (temporary, expire in hours):
+
+```bash
+aws sso login --profile ClaudeBedrockAccess
+eval "$(aws configure export-credentials --profile ClaudeBedrockAccess --format env)"
+unset AWS_BEARER_TOKEN_BEDROCK   # else the bearer token takes precedence over SigV4
+
+cd ~/Code/nick-dev/tldraw-agent
+npm install
+AWS_REGION=us-west-2 AGENT_BACKEND=bedrock PORT=8787 npm start
+```
+
+Then open `http://localhost:8787`. Every prompt runs on Bedrock; koboldcpp is never contacted. Pick the model with `AGENT_BEDROCK_MODEL` (default `bedrock-claude-sonnet-4-6`). `AWS_REGION` must match the model-id prefix (`us.*` → us-west-2) and the region your IAM identity may invoke; the `ClaudeBedrockAccess` SSO role is us-west-2 only. See "Amazon Bedrock" under Environment setup for detail.
+
+---
+
 ## Quick start (local + ngrok)
 
 ```bash
