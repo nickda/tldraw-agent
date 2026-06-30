@@ -1,6 +1,9 @@
 import { Editor } from 'tldraw'
+import { TldrawAgent } from './TldrawAgent'
 import { AgentAppAgentsManager } from './managers/AgentAppAgentsManager'
 import { AgentAppPersistenceManager } from './managers/AgentAppPersistenceManager'
+import { AgentAppPlanManager } from './managers/AgentAppPlanManager'
+import { AgentAppTeamManager } from './managers/AgentAppTeamManager'
 
 /**
  * The TldrawAgentApp class manages the agent system for a given editor instance.
@@ -30,6 +33,18 @@ export class TldrawAgentApp {
 	persistence: AgentAppPersistenceManager
 
 	/**
+	 * Manager for the Shared Plan in Team Mode - the list of Plan Items the
+	 * Planner writes and the Executors claim from.
+	 */
+	plan: AgentAppPlanManager
+
+	/**
+	 * Manager for Team Mode orchestration - spawns the team and coordinates
+	 * the review loop.
+	 */
+	team: AgentAppTeamManager
+
+	/**
 	 * Handle crash and dispose events.
 	 */
 	private handleCrash = () => this.dispose()
@@ -57,6 +72,8 @@ export class TldrawAgentApp {
 		this._editor = editor
 		this.agents = new AgentAppAgentsManager(this)
 		this.persistence = new AgentAppPersistenceManager(this)
+		this.plan = new AgentAppPlanManager(this)
+		this.team = new AgentAppTeamManager(this)
 		editor.on('crash', this.handleCrash)
 		editor.on('dispose', this.handleDispose)
 	}
@@ -69,15 +86,38 @@ export class TldrawAgentApp {
 		this._editor.off('crash', this.handleCrash)
 		this._editor.off('dispose', this.handleDispose)
 		this.persistence.dispose()
+		this.team.dispose()
+		this.plan.dispose()
 		this.agents.dispose()
 		this._editor = null
+	}
+
+	/**
+	 * Whether Team Mode is enabled. When true, user prompts route through
+	 * the Planner rather than the solo agent.
+	 */
+	get teamModeEnabled(): boolean {
+		return this.team.isActive()
+	}
+
+	/**
+	 * The agent that should receive user input: the Planner if Team Mode is
+	 * active, or the first (solo) agent otherwise.
+	 */
+	getUserFacingAgent(): TldrawAgent | undefined {
+		if (this.team.isActive()) {
+			return this.team.getPlanner() ?? undefined
+		}
+		return this.agents.getAgent()
 	}
 
 	/**
 	 * Reset everything to initial state.
 	 */
 	reset() {
+		this.team.reset()
 		this.agents.reset()
 		this.persistence.reset()
+		this.plan.reset()
 	}
 }

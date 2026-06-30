@@ -1,10 +1,9 @@
-import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 import { useEditor, useValue, VecModel } from 'tldraw'
 import { TldrawAgent } from '../agent/TldrawAgent'
 import { useAgents } from '../agent/TldrawAgentAppProvider'
 import { useFairyPosition } from '../hooks/useFairyPosition'
 import { FairyState } from '../types/FairyState'
-import { generateFairyName } from '../utils/generateFairyName'
 import { FairySprite } from './FairySprite'
 
 const FAIRY_MOVE_DURATION_MS = 400
@@ -36,7 +35,7 @@ export function FairyAvatarOverlays() {
 
 export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const editor = useEditor()
-	const fairyName = useMemo(() => generateFairyName(), [])
+	const fairyName = agent.fairyName
 	const fairyPosition = useFairyPosition(agent)
 	const [motionState, setMotionState] = useState<FairyState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)

@@ -1,13 +1,22 @@
 import { Editor, EditorAtom, uniqueId } from 'tldraw'
-import { TldrawAgent } from '../TldrawAgent'
+import { AgentRole, TldrawAgent } from '../TldrawAgent'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { getDefaultFairySpawnPosition } from '../../utils/fairyPosition'
 
 /**
  * Generate a unique agent ID.
  */
-function generateAgentId(): string {
+export function generateAgentId(): string {
 	return uniqueId()
+}
+
+/**
+ * Options for creating an agent beyond its id.
+ */
+export interface CreateAgentOptions {
+	role?: AgentRole
+	fairyName?: string
+	fairyColor?: string
 }
 
 /**
@@ -71,9 +80,10 @@ export class AgentAppAgentsManager extends BaseAgentAppManager {
 	 * If an agent with the ID already exists, returns the existing agent.
 	 *
 	 * @param id - The ID for the new agent
+	 * @param options - Optional role, fairy name, and color
 	 * @returns The created or existing agent
 	 */
-	createAgent(id: string): TldrawAgent {
+	createAgent(id: string, options?: CreateAgentOptions): TldrawAgent {
 		const existingAgent = this.getAgent(id)
 		if (existingAgent) {
 			return existingAgent
@@ -83,6 +93,9 @@ export class AgentAppAgentsManager extends BaseAgentAppManager {
 			editor: this.app.editor,
 			id,
 			onError: this.app.options.onError,
+			role: options?.role,
+			fairyName: options?.fairyName,
+			fairyColor: options?.fairyColor,
 		})
 
 		// Register the agent in the static atom

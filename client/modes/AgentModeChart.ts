@@ -1,5 +1,6 @@
 import type { AgentRequest } from '../../shared/types/AgentRequest'
 import type { TldrawAgent } from '../agent/TldrawAgent'
+import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
 import type { AgentModeDefinition, AgentModeType } from './AgentModeDefinitions'
 
 /**
@@ -28,7 +29,16 @@ export interface AgentModeNode {
 const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 	idling: {
 		onPromptStart(agent) {
-			agent.mode.setMode('working')
+			switch (agent.role) {
+				case 'planner':
+					agent.mode.setMode('planning')
+					break
+				case 'executor':
+					agent.mode.setMode('executing')
+					break
+				default:
+					agent.mode.setMode('working')
+			}
 		},
 		onEnter(agent, _fromMode) {
 			agent.todos.reset()
@@ -93,6 +103,61 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 
 		onPromptCancel(agent, _request) {
 			// Return to idling on cancel
+			agent.mode.setMode('idling')
+		},
+	},
+	planning: {
+		onEnter(agent) {
+			agent.lints.clearCreatedShapes()
+		},
+		onExit(agent) {
+			agent.lints.unlockCreatedShapes()
+		},
+		onPromptEnd(agent) {
+			// Planner goes idle after each prompt turn. The coordinator
+			// re-prompts it for review rounds, which triggers onPromptStart
+			// from idling → sets mode back to planning.
+			agent.mode.setMode('idling')
+		},
+		onPromptCancel(agent) {
+			agent.mode.setMode('idling')
+		},
+	},
+	executing: {
+		onEnter(agent) {
+			agent.lints.clearCreatedShapes()
+		},
+		onExit(agent) {
+			agent.lints.unlockCreatedShapes()
+		},
+		onPromptEnd(agent) {
+			// Mark this executor's in-progress item as done.
+			const plan = AgentAppPlanManager.getPlan(agent.editor)
+			const myInProgress = plan.findIndex(
+				(item) => item.status === 'in-progress' && item.assignee === agent.id
+			)
+			if (myInProgress !== -1) {
+				const updated = plan.slice()
+				updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
+				AgentAppPlanManager.$plan.set(agent.editor, updated)
+			}
+
+			// Try to claim the next item.
+			const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
+			const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
+
+			if (hasUnclaimed) {
+				agent.schedule({
+					agentMessages: [
+						'Claim the next available plan item and draw it.',
+					],
+					source: 'self',
+				})
+			} else {
+				agent.mode.setMode('idling')
+			}
+		},
+		onPromptCancel(agent) {
 			agent.mode.setMode('idling')
 		},
 	},

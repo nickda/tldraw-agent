@@ -15,6 +15,7 @@ import { getModeNode } from '../modes/AgentModeChart'
 import { AgentModeType } from '../modes/AgentModeDefinitions'
 import { getPromptPartUtilsRecord, PromptPartUtil } from '../parts/PromptPartUtil'
 import { extractFairyPosition, extractFairyPositionFromDiff, getFairyPositionFromBounds } from '../utils/fairyPosition'
+import { generateFairyName } from '../utils/generateFairyName'
 import { AgentActionManager } from './managers/AgentActionManager'
 import { AgentChatManager } from './managers/AgentChatManager'
 import { AgentChatOriginManager } from './managers/AgentChatOriginManager'
@@ -28,6 +29,24 @@ import { AgentTodoManager } from './managers/AgentTodoManager'
 import { AgentUserActionTracker } from './managers/AgentUserActionTracker'
 
 /**
+ * The role a Fairy plays in a Team Mode run.
+ * - `planner`: decomposes the request into the Shared Plan and reviews (one).
+ * - `executor`: claims and draws Plan Items (two).
+ * - `solo`: the single-agent path, behaving exactly as before Team Mode.
+ *
+ * The role is a stable property of the agent, distinct from its (ephemeral)
+ * mode and its cosmetic Fairy name. It is persisted so the team is stable
+ * across reloads.
+ */
+export type AgentRole = 'planner' | 'executor' | 'solo'
+
+/**
+ * The default Fairy sprite colour, matching the pre-Team-Mode look. Used by the
+ * solo agent so the single-agent path is visually unchanged.
+ */
+export const DEFAULT_FAIRY_COLOR = '#111'
+
+/**
  * The persisted state of an agent.
  * Used for saving and loading agent state.
  */
@@ -38,6 +57,12 @@ export interface PersistedAgentState {
 	contextItems?: ContextItem[]
 	modelName?: AgentModelName
 	debugFlags?: AgentDebugFlags
+	/** The agent's Team Mode role. Persisted so the team is stable across reloads. */
+	role?: AgentRole
+	/** The agent's whimsical Fairy name. Persisted so names are stable across reloads. */
+	fairyName?: string
+	/** The agent's Fairy sprite colour. Persisted so looks are stable across reloads. */
+	fairyColor?: string
 }
 
 export interface TldrawAgentOptions {
@@ -47,6 +72,12 @@ export interface TldrawAgentOptions {
 	id: string
 	/** A callback for when an error occurs. */
 	onError: (e: any) => void
+	/** The agent's Team Mode role. Defaults to `solo`. */
+	role?: AgentRole
+	/** The agent's whimsical Fairy name. Generated if not provided. */
+	fairyName?: string
+	/** The agent's Fairy sprite colour. Defaults to the pre-Team-Mode colour. */
+	fairyColor?: string
 }
 
 /**
@@ -66,6 +97,18 @@ export class TldrawAgent {
 
 	/** An id to differentiate the agent from other agents. */
 	id: string
+
+	/**
+	 * The agent's Team Mode role. A stable property distinct from the agent's
+	 * (ephemeral) mode and its cosmetic Fairy name.
+	 */
+	role: AgentRole
+
+	/** The agent's whimsical Fairy name, stable for the agent's lifetime. */
+	fairyName: string
+
+	/** The agent's Fairy sprite colour. */
+	fairyColor: string
 
 	/** A callback for when an error occurs. */
 	onError: (e: any) => void
@@ -126,10 +169,13 @@ export class TldrawAgent {
 	/**
 	 * Create a new tldraw agent.
 	 */
-	constructor({ editor, id, onError }: TldrawAgentOptions) {
+	constructor({ editor, id, onError, role, fairyName, fairyColor }: TldrawAgentOptions) {
 		this.editor = editor
 		this.id = id
 		this.onError = onError
+		this.role = role ?? 'solo'
+		this.fairyName = fairyName ?? generateFairyName()
+		this.fairyColor = fairyColor ?? DEFAULT_FAIRY_COLOR
 
 		// Initialize managers
 		// Note: mode must be initialized before actions, since actions depends on mode
@@ -168,6 +214,9 @@ export class TldrawAgent {
 			contextItems: this.context.getItems(),
 			modelName: this.modelName.getModelName(),
 			debugFlags: this.debug.getDebugFlags(),
+			role: this.role,
+			fairyName: this.fairyName,
+			fairyColor: this.fairyColor,
 		}
 	}
 
@@ -195,6 +244,15 @@ export class TldrawAgent {
 		}
 		if (state.debugFlags) {
 			this.debug.setDebugFlags(state.debugFlags)
+		}
+		if (state.role) {
+			this.role = state.role
+		}
+		if (state.fairyName) {
+			this.fairyName = state.fairyName
+		}
+		if (state.fairyColor) {
+			this.fairyColor = state.fairyColor
 		}
 	}
 
@@ -587,7 +645,11 @@ export class TldrawAgent {
 			)
 		}
 
-		const availableActions = modeDefinition.actions
+		// Widen from the per-mode const-literal tuple to the full action-type
+		// union. Since Team Mode added multiple active modes with different action
+		// sets, the inferred type is a union of tuples, which would narrow
+		// `.includes`'s parameter to the intersection of their element types.
+		const availableActions: readonly AgentAction['_type'][] = modeDefinition.actions
 
 		const requestPromise = (async () => {
 			const prompt = await this.preparePrompt(request, helpers)
