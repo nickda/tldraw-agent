@@ -1,6 +1,7 @@
 import type { AgentRequest } from '../../shared/types/AgentRequest'
 import type { TldrawAgent } from '../agent/TldrawAgent'
 import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
+import { AgentAppTeamManager } from '../agent/managers/AgentAppTeamManager'
 import type { AgentModeDefinition, AgentModeType } from './AgentModeDefinitions'
 
 /**
@@ -158,6 +159,7 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 					})
 				} else {
 					agent.mode.setMode('idling')
+					AgentAppTeamManager.triggerReviewCheck()
 				}
 			} else {
 				// No shapes created (e.g., only claimed). The claimItem action
