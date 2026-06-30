@@ -25,17 +25,18 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	activate() {
 		if (this.planner) return
 
-		// Remove solo agent(s) so only the team is visible
-		const soloAgents = this.app.agents.getAgents().filter((a) => a.role === 'solo')
-		for (const solo of soloAgents) {
-			this.app.agents.deleteAgent(solo.id)
-		}
-
+		// Create team agents first so there's never a moment with zero agents
 		this.planner = this.app.agents.createAgent(generateAgentId(), {
 			role: 'planner',
 			fairyColor: PLANNER_COLOR,
 		})
 		this.planner.mode.setMode('planning')
+
+		// Now safe to remove solo agent(s)
+		const soloAgents = this.app.agents.getAgents().filter((a) => a.role === 'solo')
+		for (const solo of soloAgents) {
+			this.app.agents.deleteAgent(solo.id)
+		}
 
 		for (let i = 0; i < 2; i++) {
 			const executor = this.app.agents.createAgent(generateAgentId(), {
