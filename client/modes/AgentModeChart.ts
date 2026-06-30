@@ -131,31 +131,37 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
-			// Mark this executor's in-progress item as done.
-			const plan = AgentAppPlanManager.getPlan(agent.editor)
-			const myInProgress = plan.findIndex(
-				(item) => item.status === 'in-progress' && item.assignee === agent.id
-			)
-			if (myInProgress !== -1) {
-				const updated = plan.slice()
-				updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
-				AgentAppPlanManager.$plan.set(agent.editor, updated)
-			}
+			// Only mark the item done if shapes were actually created
+			// (meaning real drawing happened, not just a claim action).
+			const createdShapes = agent.lints.getCreatedShapes()
+			if (createdShapes.length > 0) {
+				const plan = AgentAppPlanManager.getPlan(agent.editor)
+				const myInProgress = plan.findIndex(
+					(item) => item.status === 'in-progress' && item.assignee === agent.id
+				)
+				if (myInProgress !== -1) {
+					const updated = plan.slice()
+					updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
+					AgentAppPlanManager.$plan.set(agent.editor, updated)
+				}
 
-			// Try to claim the next item.
-			const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
-			const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
+				// Try to claim the next item.
+				const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
+				const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
 
-			if (hasUnclaimed) {
-				agent.schedule({
-					agentMessages: [
-						'Claim the next available plan item and draw it.',
-					],
-					source: 'self',
-				})
-			} else {
-				agent.mode.setMode('idling')
+				if (hasUnclaimed) {
+					agent.schedule({
+						agentMessages: [
+							'Claim the next available plan item and draw it.',
+						],
+						source: 'self',
+					})
+				} else {
+					agent.mode.setMode('idling')
+				}
 			}
+			// If no shapes created (e.g., only claimed), don't mark done.
+			// The scheduled draw prompt will run next and create shapes.
 		},
 		onPromptCancel(agent) {
 			agent.mode.setMode('idling')
