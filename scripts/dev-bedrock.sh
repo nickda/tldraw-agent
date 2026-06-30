@@ -5,7 +5,7 @@
 set -e
 
 PROFILE="${AWS_PROFILE:-ClaudeBedrockAccess}"
-MODEL="${AGENT_BEDROCK_MODEL:-bedrock-claude-opus-4-8}"
+MODEL="${AGENT_BEDROCK_MODEL:-bedrock-claude-sonnet-4-6}"
 
 echo "Refreshing AWS credentials (profile: $PROFILE)..."
 rm -f ~/.aws/cli/cache/*.json
