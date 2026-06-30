@@ -62,6 +62,11 @@ export const CreateActionUtil = registerActionUtil(
 				}
 			}
 
+			// Clamp zero/negative dimensions to a minimum of 1. The tldraw store
+			// rejects geo shapes with w=0 or h=0.
+			if ('w' in shape && (shape as any).w <= 0) (shape as any).w = 1
+			if ('h' in shape && (shape as any).h <= 0) (shape as any).h = 1
+
 			return action
 		}
 

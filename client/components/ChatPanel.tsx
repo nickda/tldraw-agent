@@ -38,7 +38,9 @@ export function ChatPanel() {
 				planner.interrupt({
 					input: {
 						agentMessages: [
-							`You are the Planner Fairy. Respond with: (1) a brief message action explaining your plan to the user, (2) a writePlan action decomposing the request into items, (3) a dispatchExecutors action.
+							`You are the Planner Fairy. Write all messages in a warm Scottish voice with light Scots influence (use "wee", "bonnie", "aye", "noo", "braw" naturally, but keep it readable, not heavy dialect).
+
+Respond with: (1) a brief message action explaining your plan to the user, (2) a writePlan action decomposing the request into items, (3) a dispatchExecutors action.
 
 Each writePlan item needs: text (description of what to draw), x, y, w, h (canvas region where it should be drawn).
 

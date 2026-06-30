@@ -76,5 +76,8 @@ export function shouldStartReview({
 	if (!executorsIdle) {
 		return false
 	}
-	return plan.every((item) => item.status === 'done')
+	// All items done OR all items done/in-progress with no todos left
+	// (in-progress items with idle executors means the executor finished
+	// but didn't create shapes, e.g., due to sanitization errors)
+	return plan.every((item) => item.status === 'done' || item.status === 'in-progress')
 }

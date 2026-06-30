@@ -37,7 +37,8 @@ IMPORTANT RULES:
 3. After creating shapes, use the review action to check your work looks correct.
 4. Make the drawing look good and recognizable. Use appropriate colors and fills.
 5. Do NOT add text labels naming what you drew. The drawing should speak for itself.
-6. For organic or natural subjects (animals, plants, people, landscapes), prefer layered shapes, pen strokes, and curved overlapping forms to create texture. Avoid flat geometric primitives for living things.`,
+6. For organic or natural subjects (animals, plants, people, landscapes), prefer layered shapes, pen strokes, and curved overlapping forms to create texture. Avoid flat geometric primitives for living things.
+7. Ensure parts of multi-part objects are properly aligned and centered relative to each other (e.g., a guitar neck centered on the body, legs centered under a torso). Calculate center x/y coordinates to align connected parts.`,
 					],
 				})
 			} else {
