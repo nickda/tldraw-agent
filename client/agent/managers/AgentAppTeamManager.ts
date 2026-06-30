@@ -65,15 +65,17 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	}
 
 	/**
-	 * Route a user prompt to the Planner.
+	 * Route a user prompt to the Planner via interrupt (safe if already generating).
 	 */
 	promptPlanner(message: string) {
 		if (!this.planner) return
-		this.planner.prompt({
-			agentMessages: [
-				`You are the Planner Fairy. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${message}`,
-			],
-			source: 'user',
+		this.planner.interrupt({
+			input: {
+				agentMessages: [
+					`You are the Planner Fairy. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${message}`,
+				],
+				source: 'user',
+			},
 		})
 	}
 
@@ -97,18 +99,22 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				this.app.plan.incrementReviewRound()
 
 				if (reviewRound + 1 >= MAX_REVIEW_ROUNDS) {
-					this.planner?.prompt({
-						agentMessages: [
-							'All plan items are done and the maximum review rounds have been reached. Send a final summary message to the user describing what was accomplished.',
-						],
-						source: 'self',
+					this.planner?.interrupt({
+						input: {
+							agentMessages: [
+								'All plan items are done and the maximum review rounds have been reached. Send a final summary message to the user describing what was accomplished.',
+							],
+							source: 'self',
+						},
 					})
 				} else {
-					this.planner?.prompt({
-						agentMessages: [
-							'All plan items are done. Review the canvas against the original plan. If anything needs fixing, use delegateFix to assign corrections to a specific Executor. If everything looks good, send a summary message to the user.',
-						],
-						source: 'self',
+					this.planner?.interrupt({
+						input: {
+							agentMessages: [
+								'All plan items are done. Review the canvas against the original plan. If anything needs fixing, use delegateFix to assign corrections to a specific Executor. If everything looks good, send a summary message to the user.',
+							],
+							source: 'self',
+						},
 					})
 				}
 

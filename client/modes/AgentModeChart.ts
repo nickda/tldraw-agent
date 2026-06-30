@@ -110,6 +110,9 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 		onEnter(agent) {
 			agent.lints.clearCreatedShapes()
 		},
+		onExit(agent) {
+			agent.lints.unlockCreatedShapes()
+		},
 		onPromptEnd(agent) {
 			// Planner goes idle after each prompt turn. The coordinator
 			// re-prompts it for review rounds, which triggers onPromptStart
@@ -123,6 +126,9 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 	executing: {
 		onEnter(agent) {
 			agent.lints.clearCreatedShapes()
+		},
+		onExit(agent) {
+			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
 			// Mark this executor's in-progress item as done.

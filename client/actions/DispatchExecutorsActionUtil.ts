@@ -22,11 +22,13 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 			const executors = agents.filter((a) => a.role === 'executor')
 
 			for (const executor of executors) {
-				executor.prompt({
-					agentMessages: [
-						'You are an Executor Fairy. Claim a plan item and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
-					],
-					source: 'other-agent',
+				executor.interrupt({
+					input: {
+						agentMessages: [
+							'You are an Executor Fairy. Claim a plan item and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+						],
+						source: 'other-agent',
+					},
 				})
 			}
 		}

@@ -27,7 +27,7 @@ export const DelegateFixActionUtil = registerActionUtil(
 			const fixItem: TodoItem = {
 				id: nextId,
 				text: action.text,
-				status: 'todo' as const,
+				status: 'in-progress' as const,
 				assignee: action.agentId,
 				bounds,
 			}
@@ -36,12 +36,14 @@ export const DelegateFixActionUtil = registerActionUtil(
 
 			const executor = AgentAppAgentsManager.getAgent(this.editor, action.agentId)
 			if (executor) {
-				executor.prompt({
-					bounds,
-					agentMessages: [
-						`Fix requested by the Planner: ${action.text}. Work inside the region (${bounds.x}, ${bounds.y}, ${bounds.w}x${bounds.h}).`,
-					],
-					source: 'other-agent',
+				executor.interrupt({
+					input: {
+						bounds,
+						agentMessages: [
+							`Fix requested by the Planner: ${action.text}. Work inside the region (${bounds.x}, ${bounds.y}, ${bounds.w}x${bounds.h}).`,
+						],
+						source: 'other-agent',
+					},
 				})
 			}
 		}

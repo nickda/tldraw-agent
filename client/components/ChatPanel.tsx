@@ -27,7 +27,17 @@ export function ChatPanel() {
 
 			// Route through Team Mode if active
 			if (app.teamModeEnabled) {
-				app.team.promptPlanner(value)
+				const planner = app.team.getPlanner()
+				if (planner) {
+					planner.interrupt({
+						input: {
+							agentMessages: [value],
+							bounds: planner.editor.getViewportPageBounds(),
+							source: 'user',
+							contextItems: agent.context.getItems(),
+						},
+					})
+				}
 				return
 			}
 
