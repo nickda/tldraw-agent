@@ -164,10 +164,10 @@ export class AgentService {
 			// `onError` is log-only in the AI SDK: errors are not surfaced through
 			// `textStream`, so capture here and re-throw after the consume loop.
 			let streamError: unknown = null
-			const { textStream } = streamText({
+			const result = streamText({
 				model,
 				messages,
-				maxOutputTokens: 32768,
+				maxOutputTokens: 65536,
 				...(modelDefinition.provider === 'bedrock' ? {} : { temperature: 0 }),
 				providerOptions,
 				onAbort() {
@@ -177,7 +177,11 @@ export class AgentService {
 					console.error('Stream text error:', e)
 					streamError = e
 				},
+				onFinish: ({ finishReason, usage }) => {
+					console.log(`[STREAM] finished: reason=${finishReason} tokens=${usage?.totalTokens ?? '?'} (in=${usage?.inputTokens ?? '?'} out=${usage?.outputTokens ?? '?'})`)
+				},
 			})
+			const { textStream } = result
 
 			let buffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
 			let cursor = 0

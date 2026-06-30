@@ -12,7 +12,7 @@ export type SharedPlan = TodoItem[]
  * the build, plus at most one fix pass. The Review Loop is hard-capped here so
  * the Fairies cannot loop forever burning time and tokens.
  */
-export const MAX_REVIEW_ROUNDS = 2
+export const MAX_REVIEW_ROUNDS = 3
 
 /**
  * The result of a successful claim: the updated plan and the item that was
@@ -76,5 +76,8 @@ export function shouldStartReview({
 	if (!executorsIdle) {
 		return false
 	}
-	return plan.every((item) => item.status === 'done')
+	// All items done OR all items done/in-progress with no todos left
+	// (in-progress items with idle executors means the executor finished
+	// but didn't create shapes, e.g., due to sanitization errors)
+	return plan.every((item) => item.status === 'done' || item.status === 'in-progress')
 }

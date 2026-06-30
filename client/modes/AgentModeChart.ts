@@ -42,9 +42,23 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 					agent.mode.setMode('working')
 			}
 		},
-		onEnter(agent, _fromMode) {
+		onEnter(agent, fromMode) {
 			agent.todos.reset()
 			agent.userAction.clearHistory()
+
+			if (agent.role === 'executor' && fromMode === 'executing') {
+				const allBounds = agent.editor.getCurrentPageBounds()
+				if (allBounds) {
+					const agents = AgentAppAgentsManager.getAgents(agent.editor)
+					const executors = agents.filter((a) => a.role === 'executor')
+					const idx = executors.indexOf(agent)
+					const spacing = 60
+					agent.requests.setFairyPosition({
+						x: allBounds.x + (idx + 1) * spacing,
+						y: allBounds.maxY + 40,
+					})
+				}
+			}
 		},
 	},
 	working: {

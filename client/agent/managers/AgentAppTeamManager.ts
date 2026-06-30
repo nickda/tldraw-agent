@@ -128,7 +128,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		if (!this.planner) return
 		if (this.reviewGuard) return
 
-		setTimeout(() => {
+		setTimeout(async () => {
 			const plan = AgentAppPlanManager.getPlan(this.app.editor)
 			const reviewRound = AgentAppPlanManager.getReviewRound(this.app.editor)
 
@@ -142,11 +142,13 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				this.reviewGuard = true
 				this.app.plan.incrementReviewRound()
 
+				await this.animateReviewTour()
+
 				if (reviewRound + 1 >= MAX_REVIEW_ROUNDS) {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done and the maximum review rounds have been reached. Send a final summary message to the user describing what was accomplished.',
+								'All plan items are done and reviews are complete. Send a final message to the user (in your warm Scottish voice) summarizing what was drawn and any improvements made during review.',
 							],
 							source: 'self',
 						},
@@ -155,7 +157,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done. Review the canvas against the original plan. If anything needs fixing, use delegateFix to assign corrections to a specific Executor. If everything looks good, send a summary message to the user.',
+								'All plan items are done. First, send a message (in your warm Scottish voice) describing what you see. Then critically review the drawing. Your bar for "needs fixing" should be LOW: alignment issues, parts not touching that should be, proportions off, missing details, disconnected elements. These are NOT minor. Use delegateFix for EVERY issue you find, no matter how small. Only say the drawing is complete if you genuinely cannot find a single improvement.',
 							],
 							source: 'self',
 						},
@@ -168,6 +170,23 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			}
 		}, 50)
 	}
+
+	private async animateReviewTour(): Promise<void> {
+		if (!this.planner) return
+		const plan = AgentAppPlanManager.getPlan(this.app.editor)
+
+		for (const item of plan) {
+			if (item.status === 'done' && item.bounds) {
+				const pos = {
+					x: item.bounds.x + item.bounds.w / 2,
+					y: item.bounds.y + item.bounds.h / 2,
+				}
+				this.planner.requests.setFairyPosition(pos)
+				await new Promise((resolve) => setTimeout(resolve, 1500))
+			}
+		}
+	}
+
 
 	private startCoordinator() {
 		// No-op: review loop is now triggered explicitly via checkReviewLoop()

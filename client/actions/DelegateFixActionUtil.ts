@@ -34,13 +34,25 @@ export const DelegateFixActionUtil = registerActionUtil(
 
 			AgentAppPlanManager.$plan.set(this.editor, [...plan, fixItem])
 
-			const executor = AgentAppAgentsManager.getAgent(this.editor, action.agentId)
+			const agents = AgentAppAgentsManager.getAgents(this.editor)
+			const executors = agents.filter((a) => a.role === 'executor')
+
+			// Prefer the specified executor, fall back to first idle one
+			let executor = executors.find((e) => e.id === action.agentId)
+			if (!executor || executor.requests.isGenerating()) {
+				executor = executors.find((e) => !e.requests.isGenerating()) ?? executors[0]
+			}
+
 			if (executor) {
 				executor.interrupt({
 					input: {
 						bounds,
 						agentMessages: [
-							`Fix requested by the Planner: ${action.text}. Work inside the region (${bounds.x}, ${bounds.y}, ${bounds.w}x${bounds.h}).`,
+							`CORRECTION from the Planner. You MUST fix this issue:
+
+${action.text}
+
+Use move actions to reposition existing shapes, delete to remove wrong shapes, or create to add missing ones. Look at the screenshot to identify which shapes need to change. Do NOT redraw everything, only fix what's wrong.`,
 						],
 						source: 'other-agent',
 					},

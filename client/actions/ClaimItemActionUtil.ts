@@ -35,7 +35,10 @@ IMPORTANT RULES:
 1. ALL shapes you create MUST have x,y coordinates within your assigned region bounds.
 2. Position shapes relative to the region: use x values between ${claimed.bounds.x} and ${claimed.bounds.x + claimed.bounds.w}, y values between ${claimed.bounds.y} and ${claimed.bounds.y + claimed.bounds.h}.
 3. After creating shapes, use the review action to check your work looks correct.
-4. Make the drawing look good and recognizable. Use appropriate colors and fills.`,
+4. Make the drawing look good and recognizable. Use appropriate colors and fills.
+5. Do NOT add text labels naming what you drew. The drawing should speak for itself.
+6. For organic or natural subjects (animals, plants, people, landscapes), prefer layered shapes, pen strokes, and curved overlapping forms to create texture. Avoid flat geometric primitives for living things.
+7. Ensure parts of multi-part objects are properly aligned and centered relative to each other (e.g., a guitar neck centered on the body, legs centered under a torso). Calculate center x/y coordinates to align connected parts.`,
 					],
 				})
 			} else {
@@ -43,7 +46,7 @@ IMPORTANT RULES:
 					agentMessages: [
 						`You are an Executor Fairy. Draw the following: ${claimed.text}
 
-After creating shapes, use the review action to check your work looks correct. Make the drawing look good and recognizable. Use appropriate colors and fills.`,
+After creating shapes, use the review action to check your work looks correct. Make the drawing look good and recognizable. Use appropriate colors and fills. Do NOT add text labels naming what you drew. For organic or natural subjects, prefer layered shapes, pen strokes, and curved overlapping forms to create texture.`,
 					],
 				})
 			}

@@ -1,13 +1,16 @@
 import { Box, useValue } from 'tldraw'
 import { TldrawAgent } from '../../agent/TldrawAgent'
-import { useAgents } from '../../agent/TldrawAgentAppProvider'
+import { useAgents, useTldrawAgentApp } from '../../agent/TldrawAgentAppProvider'
 import { AreaHighlight } from './AreaHighlight'
 
 /**
  * Renders viewport bounds highlights for all agents.
  */
 export function AgentViewportBoundsHighlights() {
+	const app = useTldrawAgentApp()
 	const agents = useAgents()
+
+	if (app.teamModeEnabled) return null
 
 	return (
 		<>

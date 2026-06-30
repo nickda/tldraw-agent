@@ -261,11 +261,10 @@ export const AGENT_MODE_DEFINITIONS = [
 			// Shared Plan
 			ClaimItemActionUtil.type,
 
-			// Individual shapes
+			// Individual shapes (no LabelActionUtil: executors add unwanted text labels)
 			CreateActionUtil.type,
 			DeleteActionUtil.type,
 			UpdateActionUtil.type,
-			LabelActionUtil.type,
 			MoveActionUtil.type,
 
 			// Groups of shapes
