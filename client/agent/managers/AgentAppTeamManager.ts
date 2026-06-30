@@ -25,6 +25,12 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	activate() {
 		if (this.planner) return
 
+		// Remove solo agent(s) so only the team is visible
+		const soloAgents = this.app.agents.getAgents().filter((a) => a.role === 'solo')
+		for (const solo of soloAgents) {
+			this.app.agents.deleteAgent(solo.id)
+		}
+
 		this.planner = this.app.agents.createAgent(generateAgentId(), {
 			role: 'planner',
 			fairyColor: PLANNER_COLOR,
@@ -131,6 +137,8 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			this.coordinatorCleanup = null
 		}
 
+		const wasActive = this.planner !== null
+
 		if (this.planner) {
 			this.app.agents.deleteAgent(this.planner.id)
 			this.planner = null
@@ -140,6 +148,11 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		}
 		this.executors = []
 		this.reviewGuard = false
+
+		// Restore a solo agent if team was active
+		if (wasActive) {
+			this.app.agents.ensureAtLeastOneAgent()
+		}
 	}
 
 	override dispose(): void {

@@ -10,10 +10,10 @@ export default defineConfig(() => {
 		fileURLToPath(new URL('./scripts/zod-locales-shim.js', import.meta.url))
 	)
 
-	// Local-model backend: drop the cloudflare() plugin (workerd) and proxy /stream
-	// to the Node server in server/. Keeps vite HMR for Mac dev against koboldcpp.
+	// Non-cloudflare backends: drop the cloudflare() plugin (workerd) and proxy /stream
+	// to the Node server in server/. Keeps vite HMR for Mac dev.
 	// Default path is unchanged: cloudflare() handles /stream as before.
-	if (process.env.AGENT_BACKEND === 'local') {
+	if (process.env.AGENT_BACKEND === 'local' || process.env.AGENT_BACKEND === 'bedrock') {
 		const localServerPort = Number(process.env.LOCAL_SERVER_PORT ?? 8787)
 		return {
 			plugins: [zodLocale, react()],
