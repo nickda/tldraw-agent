@@ -187,6 +187,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		}
 	}
 
+
 	private startCoordinator() {
 		// No-op: review loop is now triggered explicitly via checkReviewLoop()
 		// called from executing.onPromptEnd when executor goes idle.
