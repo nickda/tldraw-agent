@@ -64,7 +64,8 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				role: 'executor',
 				fairyColor: EXECUTOR_COLORS[i],
 			})
-			executor.mode.setMode('executing')
+			// Don't set mode to 'executing' here. Leave in 'idling' so that
+			// when dispatched, idling.onPromptStart transitions to 'executing'.
 			executor.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, i + 1))
 			this.executors.push(executor)
 		}
