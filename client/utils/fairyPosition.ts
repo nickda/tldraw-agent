@@ -41,6 +41,25 @@ export function getDefaultFairySpawnPosition(
 	}
 }
 
+const TEAM_FORMATION_OFFSET = 120
+
+export function getTeamFairySpawnPosition(
+	viewportBounds: { x: number; y: number; w: number; h: number },
+	roleIndex: number
+): FairyPosition {
+	const center = {
+		x: viewportBounds.x + viewportBounds.w / 2,
+		y: viewportBounds.y + viewportBounds.h / 2,
+	}
+
+	switch (roleIndex) {
+		case 0: return center
+		case 1: return { x: center.x - TEAM_FORMATION_OFFSET, y: center.y }
+		case 2: return { x: center.x + TEAM_FORMATION_OFFSET, y: center.y }
+		default: return center
+	}
+}
+
 export function extractFairyPositionFromDiff(
 	diff: ShapeDiffLike,
 	getShapePageBounds: (shapeId: string) => BoundsLike | null | undefined,

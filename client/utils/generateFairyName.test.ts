@@ -11,12 +11,12 @@ describe('generateFairyName', () => {
 	test('returns the first hardcoded fairy name when randomness selects the first entry', () => {
 		Math.random = () => 0
 
-		expect(generateFairyName()).toBe('Dick Cindersmith')
+		expect(generateFairyName()).toBe("Sniper's Dream")
 	})
 
 	test('returns the last hardcoded fairy name when randomness selects the final entry', () => {
 		Math.random = () => 0.999999
 
-		expect(generateFairyName()).toBe('Tilly Thistledown')
+		expect(generateFairyName()).toBe('Vicar of Dibley 2')
 	})
 })

@@ -4,6 +4,7 @@ import { AgentAppPlanManager } from './AgentAppPlanManager'
 import { shouldStartReview, MAX_REVIEW_ROUNDS } from './sharedPlan'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { TldrawAgent } from '../TldrawAgent'
+import { getTeamFairySpawnPosition } from '../../utils/fairyPosition'
 
 const PLANNER_COLOR = '#6366f1'
 const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
@@ -42,18 +43,21 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			return
 		}
 
-		// Create team agents first so there's never a moment with zero agents
+		const viewportBounds = this.app.editor.getViewportPageBounds()
+
+		// Remove solo agent(s) first since we create team atomically below
+		const soloAgents = existingAgents.filter((a) => a.role === 'solo')
+		for (const solo of soloAgents) {
+			this.app.agents.deleteAgent(solo.id)
+		}
+
+		// Create all 3 team agents in one batch
 		this.planner = this.app.agents.createAgent(generateAgentId(), {
 			role: 'planner',
 			fairyColor: PLANNER_COLOR,
 		})
 		this.planner.mode.setMode('planning')
-
-		// Now safe to remove solo agent(s)
-		const soloAgents = existingAgents.filter((a) => a.role === 'solo')
-		for (const solo of soloAgents) {
-			this.app.agents.deleteAgent(solo.id)
-		}
+		this.planner.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, 0))
 
 		for (let i = 0; i < 2; i++) {
 			const executor = this.app.agents.createAgent(generateAgentId(), {
@@ -61,6 +65,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				fairyColor: EXECUTOR_COLORS[i],
 			})
 			executor.mode.setMode('executing')
+			executor.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, i + 1))
 			this.executors.push(executor)
 		}
 

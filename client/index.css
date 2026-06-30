@@ -902,3 +902,45 @@ button.prompt-tag span {
 .agent-action-type-message {
 	color: var(--tl-color-text-1);
 }
+
+/* Team Roster */
+
+.team-roster {
+	position: fixed;
+	bottom: 16px;
+	right: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	z-index: 1000;
+	pointer-events: none;
+}
+
+.team-roster__entry {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 10px;
+	border-radius: 6px;
+	background: rgba(0, 0, 0, 0.6);
+	opacity: 0.5;
+	transition: opacity 200ms ease-out;
+	font-size: 12px;
+	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+	color: #fff;
+}
+
+.team-roster__entry--active {
+	opacity: 1;
+}
+
+.team-roster__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.team-roster__name {
+	white-space: nowrap;
+}

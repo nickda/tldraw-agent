@@ -5,6 +5,7 @@ import { useAgents } from '../agent/TldrawAgentAppProvider'
 import { useFairyPosition } from '../hooks/useFairyPosition'
 import { FairyState } from '../types/FairyState'
 import { FairySprite } from './FairySprite'
+import { FairyReticle } from './FairyReticle'
 
 const FAIRY_MOVE_DURATION_MS = 400
 const FAIRY_ANNOYED_DELAY_MS = 2000
@@ -37,6 +38,11 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const editor = useEditor()
 	const fairyName = agent.fairyName
 	const fairyPosition = useFairyPosition(agent)
+	const isActive = useValue(
+		`fairy-active-${agent.id}`,
+		() => agent.requests.isGenerating(),
+		[agent]
+	)
 	const [motionState, setMotionState] = useState<FairyState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -200,8 +206,10 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 					style={{
 						transform: `scale(${getFairySpriteScale(zoomLevel)})`,
 						transformOrigin: 'center bottom',
+						position: 'relative',
 					}}
 				>
+					<FairyReticle color={agent.fairyColor} active={isActive} />
 					<FairySprite fairyName={fairyName} state={state} />
 				</div>
 			</div>
