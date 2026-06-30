@@ -25,6 +25,23 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	activate() {
 		if (this.planner) return
 
+		// Check if team agents already exist (restored from persistence)
+		const existingAgents = this.app.agents.getAgents()
+		const existingPlanner = existingAgents.find((a) => a.role === 'planner')
+		const existingExecutors = existingAgents.filter((a) => a.role === 'executor')
+
+		if (existingPlanner && existingExecutors.length >= 2) {
+			this.planner = existingPlanner
+			this.executors = existingExecutors.slice(0, 2)
+			// Remove solo agent(s)
+			const soloAgents = existingAgents.filter((a) => a.role === 'solo')
+			for (const solo of soloAgents) {
+				this.app.agents.deleteAgent(solo.id)
+			}
+			this.startCoordinator()
+			return
+		}
+
 		// Create team agents first so there's never a moment with zero agents
 		this.planner = this.app.agents.createAgent(generateAgentId(), {
 			role: 'planner',
@@ -33,7 +50,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		this.planner.mode.setMode('planning')
 
 		// Now safe to remove solo agent(s)
-		const soloAgents = this.app.agents.getAgents().filter((a) => a.role === 'solo')
+		const soloAgents = existingAgents.filter((a) => a.role === 'solo')
 		for (const solo of soloAgents) {
 			this.app.agents.deleteAgent(solo.id)
 		}
