@@ -31,7 +31,10 @@ export function ChatPanel() {
 				if (planner) {
 					planner.interrupt({
 						input: {
-							agentMessages: [value],
+							agentMessages: [
+								`You are the Planner Fairy. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${value}`,
+							],
+							userMessages: [value],
 							bounds: planner.editor.getViewportPageBounds(),
 							source: 'user',
 							contextItems: agent.context.getItems(),
