@@ -18,19 +18,24 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 		override applyAction(action: Streaming<DispatchExecutorsAction>, _helpers: AgentHelpers) {
 			if (!action.complete) return
 
-			const agents = AgentAppAgentsManager.getAgents(this.editor)
-			const executors = agents.filter((a) => a.role === 'executor')
+			// Dispatch executors outside the synchronous extractingChanges context.
+			// interrupt() starts async prompt() which needs to run after the current
+			// sync frame completes.
+			setTimeout(() => {
+				const agents = AgentAppAgentsManager.getAgents(this.editor)
+				const executors = agents.filter((a) => a.role === 'executor')
 
-			for (const executor of executors) {
-				executor.interrupt({
-					input: {
-						agentMessages: [
-							'You are an Executor Fairy. Use the claimItem action to claim a plan item. After claiming, you will receive detailed instructions about what to draw and where. Follow coordinate instructions precisely to ensure shapes are positioned correctly within your assigned region.',
-						],
-						source: 'other-agent',
-					},
-				})
-			}
+				for (const executor of executors) {
+					executor.interrupt({
+						input: {
+							agentMessages: [
+								'You are an Executor Fairy. Use the claimItem action to claim a plan item. After claiming, you will receive detailed instructions about what to draw and where. Follow coordinate instructions precisely to ensure shapes are positioned correctly within your assigned region.',
+							],
+							source: 'other-agent',
+						},
+					})
+				}
+			}, 0)
 		}
 	},
 	{ forModes: ['planning'] }
