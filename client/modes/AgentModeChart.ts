@@ -159,9 +159,15 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 				} else {
 					agent.mode.setMode('idling')
 				}
+			} else {
+				// No shapes created (e.g., only claimed). The claimItem action
+				// already scheduled a draw prompt, so we do nothing here and let
+				// the scheduled request proceed. If nothing is scheduled (edge
+				// case), go idle to avoid the "active mode" assertion.
+				if (!agent.requests.getScheduledRequest()) {
+					agent.mode.setMode('idling')
+				}
 			}
-			// If no shapes created (e.g., only claimed), don't mark done.
-			// The scheduled draw prompt will run next and create shapes.
 		},
 		onPromptCancel(agent) {
 			agent.mode.setMode('idling')
