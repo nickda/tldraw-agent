@@ -148,7 +148,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done and the maximum review rounds have been reached. Send a final summary message to the user describing what was accomplished.',
+								'All plan items are done and reviews are complete. Send a final message to the user summarizing what was drawn and any improvements made during review.',
 							],
 							source: 'self',
 						},
@@ -157,7 +157,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done. Review the canvas against the original plan. If anything needs fixing, use delegateFix to assign corrections to a specific Executor. If everything looks good, send a summary message to the user.',
+								'All plan items are done. First, send a message action to the user describing what you see on the canvas and what you are reviewing. Then check: (1) Are new elements properly integrated with existing shapes (touching, overlapping, connected)? (2) Is the spatial relationship correct (e.g., items held by characters, attached to objects)? If anything needs fixing, send a message explaining the issue, then use delegateFix to assign corrections. If everything looks good, send a summary message saying the drawing is complete.',
 							],
 							source: 'self',
 						},

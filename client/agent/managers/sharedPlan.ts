@@ -12,7 +12,7 @@ export type SharedPlan = TodoItem[]
  * the build, plus at most one fix pass. The Review Loop is hard-capped here so
  * the Fairies cannot loop forever burning time and tokens.
  */
-export const MAX_REVIEW_ROUNDS = 2
+export const MAX_REVIEW_ROUNDS = 3
 
 /**
  * The result of a successful claim: the updated plan and the item that was

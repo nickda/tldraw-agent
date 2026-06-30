@@ -10,12 +10,14 @@ export const WritePlanActionUtil = registerActionUtil(
 		static override type = 'writePlan' as const
 
 		override getInfo(action: Streaming<WritePlanAction>) {
-			const count = action.items?.length ?? 0
+			if (!action.complete) {
+				return { icon: 'pencil' as const, description: 'Writing the plan...' }
+			}
+			const items = action.items ?? []
+			const itemList = items.map((item) => `• ${item.text}`).join('\n')
 			return {
 				icon: 'pencil' as const,
-				description: action.complete
-					? `Wrote plan (${count} item${count !== 1 ? 's' : ''})`
-					: 'Writing the plan...',
+				description: `Plan:\n${itemList}`,
 			}
 		}
 
