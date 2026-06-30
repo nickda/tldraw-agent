@@ -171,7 +171,8 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 
 	if (!pagePosition) return null
 
-	const state: FairyState = isAnnoyed ? 'annoyed' : motionState
+	const plannerPlanning = agent.role === 'planner' && isActive && motionState === 'idle'
+	const state: FairyState = isAnnoyed ? 'annoyed' : plannerPlanning ? 'planning' : motionState
 
 	return (
 		<div
@@ -210,7 +211,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 					}}
 				>
 					<FairyReticle color={agent.fairyColor} active={isActive} />
-					<FairySprite fairyName={fairyName} state={state} />
+					<FairySprite fairyName={fairyName} state={state} color={agent.fairyColor} />
 				</div>
 			</div>
 		</div>

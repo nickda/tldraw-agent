@@ -944,3 +944,14 @@ button.prompt-tag span {
 .team-roster__name {
 	white-space: nowrap;
 }
+
+/* Fairy planning animation */
+
+.fairy-sprite__pencil-hand {
+	animation: pencil-bob 0.8s ease-in-out infinite;
+}
+
+@keyframes pencil-bob {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(2px); }
+}

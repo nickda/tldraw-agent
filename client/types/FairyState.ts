@@ -1,1 +1,1 @@
-export type FairyState = 'idle' | 'drawing' | 'annoyed'
+export type FairyState = 'idle' | 'drawing' | 'planning' | 'annoyed'

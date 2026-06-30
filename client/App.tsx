@@ -77,7 +77,6 @@ function App() {
 					{app && (
 						<TldrawAgentAppContextProvider app={app}>
 							<FairyAvatarOverlays />
-							<TeamRoster />
 							<AgentViewportBoundsHighlights />
 							<AllContextHighlights />
 						</TldrawAgentAppContextProvider>
@@ -107,6 +106,11 @@ function App() {
 						</TldrawAgentAppContextProvider>
 					)}
 				</ErrorBoundary>
+				{app && (
+					<TldrawAgentAppContextProvider app={app}>
+						<TeamRoster />
+					</TldrawAgentAppContextProvider>
+				)}
 			</div>
 		</TldrawUiToastsProvider>
 	)
