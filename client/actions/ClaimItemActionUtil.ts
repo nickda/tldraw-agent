@@ -25,12 +25,26 @@ export const ClaimItemActionUtil = registerActionUtil(
 				this.agent.schedule({
 					bounds: claimed.bounds,
 					agentMessages: [
-						`Draw the following inside the region (${claimed.bounds.x}, ${claimed.bounds.y}, ${claimed.bounds.w}x${claimed.bounds.h}): ${claimed.text}`,
+						`You are an Executor Fairy drawing inside a specific region of the canvas.
+
+YOUR ASSIGNED REGION: x=${claimed.bounds.x}, y=${claimed.bounds.y}, width=${claimed.bounds.w}, height=${claimed.bounds.h}
+
+WHAT TO DRAW: ${claimed.text}
+
+IMPORTANT RULES:
+1. ALL shapes you create MUST have x,y coordinates within your assigned region bounds.
+2. Position shapes relative to the region: use x values between ${claimed.bounds.x} and ${claimed.bounds.x + claimed.bounds.w}, y values between ${claimed.bounds.y} and ${claimed.bounds.y + claimed.bounds.h}.
+3. After creating shapes, use the review action to check your work looks correct.
+4. Make the drawing look good and recognizable. Use appropriate colors and fills.`,
 					],
 				})
 			} else {
 				this.agent.schedule({
-					agentMessages: [`Draw the following: ${claimed.text}`],
+					agentMessages: [
+						`You are an Executor Fairy. Draw the following: ${claimed.text}
+
+After creating shapes, use the review action to check your work looks correct. Make the drawing look good and recognizable. Use appropriate colors and fills.`,
+					],
 				})
 			}
 		}

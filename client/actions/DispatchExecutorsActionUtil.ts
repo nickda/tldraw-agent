@@ -25,7 +25,7 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 				executor.interrupt({
 					input: {
 						agentMessages: [
-							'You are an Executor Fairy. Claim a plan item and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+							'You are an Executor Fairy. Use the claimItem action to claim a plan item. After claiming, you will receive detailed instructions about what to draw and where. Follow coordinate instructions precisely to ensure shapes are positioned correctly within your assigned region.',
 						],
 						source: 'other-agent',
 					},
