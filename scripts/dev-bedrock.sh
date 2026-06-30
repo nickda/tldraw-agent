@@ -17,7 +17,9 @@ lsof -ti:8787 2>/dev/null | xargs kill -9 2>/dev/null || true
 lsof -ti:5173 2>/dev/null | xargs kill -9 2>/dev/null || true
 sleep 1
 
-echo "Starting server (model: $MODEL)..."
+export AWS_REGION="${AWS_REGION:-us-east-1}"
+
+echo "Starting server (model: $MODEL, region: $AWS_REGION)..."
 AGENT_BEDROCK_MODEL="$MODEL" AGENT_BACKEND=bedrock AGENT_SERVE_DIST=false \
   npx tsx server/index.ts &
 SERVER_PID=$!
