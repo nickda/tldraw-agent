@@ -2,6 +2,7 @@ import { Editor, EditorAtom, uniqueId } from 'tldraw'
 import { AgentRole, TldrawAgent } from '../TldrawAgent'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { getDefaultFairySpawnPosition } from '../../utils/fairyPosition'
+import { generateFairyName } from '../../utils/generateFairyName'
 
 /**
  * Generate a unique agent ID.
@@ -89,12 +90,15 @@ export class AgentAppAgentsManager extends BaseAgentAppManager {
 			return existingAgent
 		}
 
+		const existingNames = this.getAgents().map((a) => a.fairyName)
+		const fairyName = options?.fairyName ?? generateFairyName(existingNames)
+
 		const agent = new TldrawAgent({
 			editor: this.app.editor,
 			id,
 			onError: this.app.options.onError,
 			role: options?.role,
-			fairyName: options?.fairyName,
+			fairyName,
 			fairyColor: options?.fairyColor,
 		})
 

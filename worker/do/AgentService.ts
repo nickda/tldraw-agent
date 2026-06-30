@@ -167,7 +167,7 @@ export class AgentService {
 			const { textStream } = streamText({
 				model,
 				messages,
-				maxOutputTokens: 32768,
+				maxOutputTokens: 65536,
 				...(modelDefinition.provider === 'bedrock' ? {} : { temperature: 0 }),
 				providerOptions,
 				onAbort() {

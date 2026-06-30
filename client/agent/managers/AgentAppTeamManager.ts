@@ -128,7 +128,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		if (!this.planner) return
 		if (this.reviewGuard) return
 
-		setTimeout(() => {
+		setTimeout(async () => {
 			const plan = AgentAppPlanManager.getPlan(this.app.editor)
 			const reviewRound = AgentAppPlanManager.getReviewRound(this.app.editor)
 
@@ -141,6 +141,8 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			if (shouldStartReview({ plan, executorsIdle, reviewRound })) {
 				this.reviewGuard = true
 				this.app.plan.incrementReviewRound()
+
+				await this.animateReviewTour()
 
 				if (reviewRound + 1 >= MAX_REVIEW_ROUNDS) {
 					this.planner?.interrupt({
@@ -167,6 +169,22 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				}, 100)
 			}
 		}, 50)
+	}
+
+	private async animateReviewTour(): Promise<void> {
+		if (!this.planner) return
+		const plan = AgentAppPlanManager.getPlan(this.app.editor)
+
+		for (const item of plan) {
+			if (item.status === 'done' && item.bounds) {
+				const pos = {
+					x: item.bounds.x + item.bounds.w / 2,
+					y: item.bounds.y + item.bounds.h / 2,
+				}
+				this.planner.requests.setFairyPosition(pos)
+				await new Promise((resolve) => setTimeout(resolve, 1500))
+			}
+		}
 	}
 
 	private startCoordinator() {

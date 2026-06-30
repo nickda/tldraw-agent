@@ -35,7 +35,8 @@ IMPORTANT RULES:
 1. ALL shapes you create MUST have x,y coordinates within your assigned region bounds.
 2. Position shapes relative to the region: use x values between ${claimed.bounds.x} and ${claimed.bounds.x + claimed.bounds.w}, y values between ${claimed.bounds.y} and ${claimed.bounds.y + claimed.bounds.h}.
 3. After creating shapes, use the review action to check your work looks correct.
-4. Make the drawing look good and recognizable. Use appropriate colors and fills.`,
+4. Make the drawing look good and recognizable. Use appropriate colors and fills.
+5. Do NOT add text labels naming what you drew. The drawing should speak for itself.`,
 					],
 				})
 			} else {
@@ -43,7 +44,7 @@ IMPORTANT RULES:
 					agentMessages: [
 						`You are an Executor Fairy. Draw the following: ${claimed.text}
 
-After creating shapes, use the review action to check your work looks correct. Make the drawing look good and recognizable. Use appropriate colors and fills.`,
+After creating shapes, use the review action to check your work looks correct. Make the drawing look good and recognizable. Use appropriate colors and fills. Do NOT add text labels naming what you drew.`,
 					],
 				})
 			}

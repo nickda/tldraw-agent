@@ -26,7 +26,9 @@ const FAIRY_NAMES = [
 	'Vicar of Dibley 2',
 ]
 
-export function generateFairyName() {
-	const index = Math.floor(Math.random() * FAIRY_NAMES.length)
-	return FAIRY_NAMES[index]
+export function generateFairyName(exclude: string[] = []) {
+	const available = FAIRY_NAMES.filter((name) => !exclude.includes(name))
+	const pool = available.length > 0 ? available : FAIRY_NAMES
+	const index = Math.floor(Math.random() * pool.length)
+	return pool[index]
 }
