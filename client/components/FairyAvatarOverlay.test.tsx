@@ -43,7 +43,7 @@ describe('FairyAvatarOverlay styles', () => {
 	test('only treats page-space position changes as movement', () => {
 		expect(didFairyPositionMove({ x: 10, y: 20 }, { x: 10, y: 20 })).toBe(false)
 		expect(didFairyPositionMove({ x: 10, y: 20 }, { x: 11, y: 20 })).toBe(true)
-		expect(didFairyPositionMove(null, { x: 10, y: 20 })).toBe(true)
+		expect(didFairyPositionMove(null, { x: 10, y: 20 })).toBe(false)
 		expect(didFairyPositionMove({ x: 10, y: 20 }, null)).toBe(false)
 		expect(didFairyPositionMove(null, null)).toBe(false)
 	})

@@ -222,7 +222,7 @@ export function didFairyPositionMove(
 	previousPosition: VecModel | null,
 	currentPosition: VecModel | null
 ) {
-	if (!previousPosition) return !!currentPosition
+	if (!previousPosition) return false
 	if (!currentPosition) return false
 	return (
 		previousPosition.x !== currentPosition.x ||
