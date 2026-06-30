@@ -907,8 +907,8 @@ button.prompt-tag span {
 
 .team-roster {
 	position: fixed;
-	bottom: 16px;
-	right: 16px;
+	bottom: 56px;
+	left: 16px;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
