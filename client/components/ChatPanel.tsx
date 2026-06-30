@@ -16,56 +16,45 @@ export function ChatPanel() {
 			const formData = new FormData(e.currentTarget)
 			const value = formData.get('input') as string
 
-			// If the user's message is empty, just cancel the current request (if there is one)
 			if (value === '') {
-				agent.cancel()
-				return
-			}
-
-			// Clear the chat input (context is cleared after it's captured in requestAgentActions)
-			inputRef.current.value = ''
-
-			// Route through Team Mode if active
-			if (app.teamModeEnabled) {
 				const planner = app.team.getPlanner()
-				if (planner) {
-					planner.interrupt({
-						input: {
-							agentMessages: [
-								`You are the Planner Fairy. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${value}`,
-							],
-							userMessages: [value],
-							bounds: planner.editor.getViewportPageBounds(),
-							source: 'user',
-							contextItems: agent.context.getItems(),
-						},
-					})
+				if (planner) planner.cancel()
+				for (const executor of app.team.getExecutors()) {
+					executor.cancel()
 				}
 				return
 			}
 
-			// Sending a new message to the agent should interrupt the current request
-			agent.interrupt({
-				input: {
-					agentMessages: [value],
-					bounds: agent.editor.getViewportPageBounds(),
-					source: 'user',
-					contextItems: agent.context.getItems(),
-				},
-			})
+			inputRef.current.value = ''
+
+			const planner = app.team.getPlanner()
+			if (planner) {
+				planner.interrupt({
+					input: {
+						agentMessages: [
+							`IMPORTANT: You MUST respond with a writePlan action followed by a dispatchExecutors action. Do NOT use message or think actions. You are the Planner Fairy whose ONLY job is to decompose user requests into plan items.
+
+Each writePlan item needs: text (description of what to draw), x, y, w, h (canvas region where it should be drawn). Place items in disjoint regions so they don't overlap. Use the viewport bounds as a guide for positioning.
+
+After the writePlan action, emit a dispatchExecutors action to start the Executor Fairies.
+
+User request: ${value}`,
+						],
+						userMessages: [value],
+						bounds: planner.editor.getViewportPageBounds(),
+						source: 'user',
+						contextItems: agent.context.getItems(),
+					},
+				})
+			}
 		},
 		[agent, app]
 	)
 
 	const handleNewChat = useCallback(() => {
-		agent.reset()
-	}, [agent])
-
-	const handleToggleTeamMode = useCallback(() => {
-		if (app.teamModeEnabled) {
-			app.team.reset()
-		} else {
-			app.team.activate()
+		app.plan.reset()
+		for (const a of app.agents.getAgents()) {
+			a.reset()
 		}
 	}, [app])
 
@@ -74,13 +63,6 @@ export function ChatPanel() {
 			<div className="chat-header">
 				<button className="new-chat-button" onClick={handleNewChat}>
 					+
-				</button>
-				<button
-					className={`team-mode-button${app.teamModeEnabled ? ' team-mode-button--active' : ''}`}
-					onClick={handleToggleTeamMode}
-					title={app.teamModeEnabled ? 'Disable Team Mode' : 'Enable Team Mode'}
-				>
-					Team
 				</button>
 			</div>
 			<ChatHistory agent={agent} />

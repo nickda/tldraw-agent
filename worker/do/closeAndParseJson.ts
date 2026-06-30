@@ -5,6 +5,14 @@
  * @returns The parsed object.
  */
 export function closeAndParseJson(string: string) {
+	// Strip any non-JSON preamble (model may emit thinking text before the JSON
+	// when assistant prefill is disabled, e.g. on Bedrock).
+	const jsonStart = string.indexOf('{')
+	if (jsonStart === -1) return null
+	if (jsonStart > 0) {
+		string = string.slice(jsonStart)
+	}
+
 	const stackOfOpenings = []
 
 	// Track openings and closings

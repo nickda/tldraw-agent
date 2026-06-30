@@ -1,9 +1,9 @@
-import { react } from 'tldraw'
 import { generateAgentId } from './AgentAppAgentsManager'
 import { AgentAppPlanManager } from './AgentAppPlanManager'
 import { shouldStartReview, MAX_REVIEW_ROUNDS } from './sharedPlan'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { TldrawAgent } from '../TldrawAgent'
+import { getTeamFairySpawnPosition } from '../../utils/fairyPosition'
 
 const PLANNER_COLOR = '#6366f1'
 const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
@@ -13,10 +13,21 @@ const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
  * prompts to the Planner, and runs the reactive review-loop coordinator.
  */
 export class AgentAppTeamManager extends BaseAgentAppManager {
+	private static instance: AgentAppTeamManager | null = null
+
 	private planner: TldrawAgent | null = null
 	private executors: TldrawAgent[] = []
 	private coordinatorCleanup: (() => void) | null = null
 	private reviewGuard = false
+
+	constructor(app: any) {
+		super(app)
+		AgentAppTeamManager.instance = this
+	}
+
+	static triggerReviewCheck() {
+		AgentAppTeamManager.instance?.checkReviewLoop()
+	}
 
 	/**
 	 * Activate Team Mode by spawning the team (if not already present) and
@@ -42,25 +53,30 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			return
 		}
 
-		// Create team agents first so there's never a moment with zero agents
+		const viewportBounds = this.app.editor.getViewportPageBounds()
+
+		// Remove solo agent(s) first since we create team atomically below
+		const soloAgents = existingAgents.filter((a) => a.role === 'solo')
+		for (const solo of soloAgents) {
+			this.app.agents.deleteAgent(solo.id)
+		}
+
+		// Create all 3 team agents in one batch
 		this.planner = this.app.agents.createAgent(generateAgentId(), {
 			role: 'planner',
 			fairyColor: PLANNER_COLOR,
 		})
 		this.planner.mode.setMode('planning')
-
-		// Now safe to remove solo agent(s)
-		const soloAgents = existingAgents.filter((a) => a.role === 'solo')
-		for (const solo of soloAgents) {
-			this.app.agents.deleteAgent(solo.id)
-		}
+		this.planner.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, 0))
 
 		for (let i = 0; i < 2; i++) {
 			const executor = this.app.agents.createAgent(generateAgentId(), {
 				role: 'executor',
 				fairyColor: EXECUTOR_COLORS[i],
 			})
-			executor.mode.setMode('executing')
+			// Don't set mode to 'executing' here. Leave in 'idling' so that
+			// when dispatched, idling.onPromptStart transitions to 'executing'.
+			executor.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, i + 1))
 			this.executors.push(executor)
 		}
 
@@ -104,11 +120,15 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	}
 
 	/**
-	 * Start the reactive coordinator that watches for plan completion and
-	 * triggers the Review Loop.
+	 * Check if the review loop should trigger. Called from executing.onPromptEnd
+	 * when an executor finishes and goes idle (deferred by setTimeout to let
+	 * isGenerating clear).
 	 */
-	private startCoordinator() {
-		this.coordinatorCleanup = react('team-mode-coordinator', () => {
+	checkReviewLoop() {
+		if (!this.planner) return
+		if (this.reviewGuard) return
+
+		setTimeout(() => {
 			const plan = AgentAppPlanManager.getPlan(this.app.editor)
 			const reviewRound = AgentAppPlanManager.getReviewRound(this.app.editor)
 
@@ -146,7 +166,12 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.reviewGuard = false
 				}, 100)
 			}
-		})
+		}, 50)
+	}
+
+	private startCoordinator() {
+		// No-op: review loop is now triggered explicitly via checkReviewLoop()
+		// called from executing.onPromptEnd when executor goes idle.
 	}
 
 	reset(): void {

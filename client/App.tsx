@@ -17,6 +17,7 @@ import { ChatPanel } from './components/ChatPanel'
 import { ChatPanelFallback } from './components/ChatPanelFallback'
 import { CustomHelperButtons } from './components/CustomHelperButtons'
 import { FairyAvatarOverlays } from './components/FairyAvatarOverlay'
+import { TeamRoster } from './components/TeamRoster'
 import { AgentViewportBoundsHighlights } from './components/highlights/AgentViewportBoundsHighlights'
 import { AllContextHighlights } from './components/highlights/ContextHighlights'
 import { TargetAreaTool } from './tools/TargetAreaTool'
@@ -105,6 +106,11 @@ function App() {
 						</TldrawAgentAppContextProvider>
 					)}
 				</ErrorBoundary>
+				{app && (
+					<TldrawAgentAppContextProvider app={app}>
+						<TeamRoster />
+					</TldrawAgentAppContextProvider>
+				)}
 			</div>
 		</TldrawUiToastsProvider>
 	)

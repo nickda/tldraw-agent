@@ -1,6 +1,8 @@
 import type { AgentRequest } from '../../shared/types/AgentRequest'
 import type { TldrawAgent } from '../agent/TldrawAgent'
+import { AgentAppAgentsManager } from '../agent/managers/AgentAppAgentsManager'
 import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
+import { AgentAppTeamManager } from '../agent/managers/AgentAppTeamManager'
 import type { AgentModeDefinition, AgentModeType } from './AgentModeDefinitions'
 
 /**
@@ -114,6 +116,34 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
+			// If a plan exists but executors are idle (model wrote writePlan
+			// but didn't emit dispatchExecutors), auto-dispatch.
+			const plan = AgentAppPlanManager.getPlan(agent.editor)
+			const hasTodoItems = plan.some((item) => item.status === 'todo')
+
+			if (hasTodoItems) {
+				const agents = AgentAppAgentsManager.getAgents(agent.editor)
+				const executors = agents.filter((a) => a.role === 'executor')
+				const executorsIdle = executors.every((e) => !e.requests.isGenerating())
+
+				if (executorsIdle && executors.length > 0) {
+					for (const executor of executors) {
+						try {
+							executor.interrupt({
+								input: {
+									agentMessages: [
+										'You are an Executor Fairy. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+									],
+									source: 'other-agent',
+								},
+							})
+						} catch (e) {
+							console.error(`[TeamMode] Auto-dispatch failed for ${executor.id}:`, e)
+						}
+					}
+				}
+			}
+
 			// Planner goes idle after each prompt turn. The coordinator
 			// re-prompts it for review rounds, which triggers onPromptStart
 			// from idling → sets mode back to planning.
@@ -131,30 +161,43 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
-			// Mark this executor's in-progress item as done.
-			const plan = AgentAppPlanManager.getPlan(agent.editor)
-			const myInProgress = plan.findIndex(
-				(item) => item.status === 'in-progress' && item.assignee === agent.id
-			)
-			if (myInProgress !== -1) {
-				const updated = plan.slice()
-				updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
-				AgentAppPlanManager.$plan.set(agent.editor, updated)
-			}
+			// Only mark the item done if shapes were actually created
+			// (meaning real drawing happened, not just a claim action).
+			const createdShapes = agent.lints.getCreatedShapes()
+			if (createdShapes.length > 0) {
+				const plan = AgentAppPlanManager.getPlan(agent.editor)
+				const myInProgress = plan.findIndex(
+					(item) => item.status === 'in-progress' && item.assignee === agent.id
+				)
+				if (myInProgress !== -1) {
+					const updated = plan.slice()
+					updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
+					AgentAppPlanManager.$plan.set(agent.editor, updated)
+				}
 
-			// Try to claim the next item.
-			const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
-			const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
+				// Try to claim the next item.
+				const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
+				const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
 
-			if (hasUnclaimed) {
-				agent.schedule({
-					agentMessages: [
-						'Claim the next available plan item and draw it.',
-					],
-					source: 'self',
-				})
+				if (hasUnclaimed) {
+					agent.schedule({
+						agentMessages: [
+							'Claim the next available plan item and draw it.',
+						],
+						source: 'self',
+					})
+				} else {
+					agent.mode.setMode('idling')
+					AgentAppTeamManager.triggerReviewCheck()
+				}
 			} else {
-				agent.mode.setMode('idling')
+				// No shapes created (e.g., only claimed). The claimItem action
+				// already scheduled a draw prompt, so we do nothing here and let
+				// the scheduled request proceed. If nothing is scheduled (edge
+				// case), go idle to avoid the "active mode" assertion.
+				if (!agent.requests.getScheduledRequest()) {
+					agent.mode.setMode('idling')
+				}
 			}
 		},
 		onPromptCancel(agent) {

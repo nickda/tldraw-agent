@@ -167,8 +167,8 @@ export class AgentService {
 			const { textStream } = streamText({
 				model,
 				messages,
-				maxOutputTokens: 8192,
-				temperature: 0,
+				maxOutputTokens: 32768,
+				...(modelDefinition.provider === 'bedrock' ? {} : { temperature: 0 }),
 				providerOptions,
 				onAbort() {
 					console.warn('Stream actions aborted')
