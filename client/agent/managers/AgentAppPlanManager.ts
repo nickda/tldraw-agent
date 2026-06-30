@@ -23,14 +23,14 @@ export class AgentAppPlanManager extends BaseAgentAppManager {
 	 * Static EditorAtom containing the Shared Plan.
 	 * This allows action utils to access the plan without the full app.
 	 */
-	private static $plan = new EditorAtom<SharedPlan>('sharedPlan', () => [])
+	static $plan = new EditorAtom<SharedPlan>('sharedPlan', () => [])
 
 	/**
 	 * Static EditorAtom tracking the current review round. The build counts as
 	 * round 0; the Review Loop increments it and is hard-capped (see
 	 * `MAX_REVIEW_ROUNDS`).
 	 */
-	private static $reviewRound = new EditorAtom<number>('sharedPlanReviewRound', () => 0)
+	static $reviewRound = new EditorAtom<number>('sharedPlanReviewRound', () => 0)
 
 	/**
 	 * Get the Shared Plan for an editor.

@@ -398,11 +398,20 @@ export type UnknownAction = z.infer<typeof UnknownAction>
 export const WritePlanAction = z
 	.object({
 		_type: z.literal('writePlan'),
+		items: z.array(
+			z.object({
+				text: z.string(),
+				x: z.number(),
+				y: z.number(),
+				w: z.number(),
+				h: z.number(),
+			})
+		),
 	})
 	.meta({
 		title: 'Write Plan',
 		description:
-			'The Planner decomposes the user request into the Shared Plan, deciding the layout up front so each Plan Item owns a disjoint region of the canvas.',
+			'The Planner decomposes the user request into the Shared Plan. Each item has a text description and a bounds region (x, y, w, h) so that Executors draw in disjoint areas of the canvas.',
 	})
 
 export type WritePlanAction = z.infer<typeof WritePlanAction>
@@ -424,11 +433,17 @@ export type DispatchExecutorsAction = z.infer<typeof DispatchExecutorsAction>
 export const DelegateFixAction = z
 	.object({
 		_type: z.literal('delegateFix'),
+		agentId: z.string(),
+		text: z.string(),
+		x: z.number(),
+		y: z.number(),
+		w: z.number(),
+		h: z.number(),
 	})
 	.meta({
 		title: 'Delegate Fix',
 		description:
-			'The Planner directs a specific Executor to fix a specific defect by reopening or adding a Plan Item assigned to that Executor.',
+			'The Planner directs a specific Executor to fix a defect. Provides the Executor ID, a description of the fix, and the bounds region where the fix should happen.',
 	})
 
 export type DelegateFixAction = z.infer<typeof DelegateFixAction>
