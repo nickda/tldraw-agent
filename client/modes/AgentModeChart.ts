@@ -1,5 +1,6 @@
 import type { AgentRequest } from '../../shared/types/AgentRequest'
 import type { TldrawAgent } from '../agent/TldrawAgent'
+import { AgentAppAgentsManager } from '../agent/managers/AgentAppAgentsManager'
 import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
 import { AgentAppTeamManager } from '../agent/managers/AgentAppTeamManager'
 import type { AgentModeDefinition, AgentModeType } from './AgentModeDefinitions'
@@ -115,6 +116,34 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
+			// If a plan exists but executors are idle (model wrote writePlan
+			// but didn't emit dispatchExecutors), auto-dispatch.
+			const plan = AgentAppPlanManager.getPlan(agent.editor)
+			const hasTodoItems = plan.some((item) => item.status === 'todo')
+
+			if (hasTodoItems) {
+				const agents = AgentAppAgentsManager.getAgents(agent.editor)
+				const executors = agents.filter((a) => a.role === 'executor')
+				const executorsIdle = executors.every((e) => !e.requests.isGenerating())
+
+				if (executorsIdle && executors.length > 0) {
+					for (const executor of executors) {
+						try {
+							executor.interrupt({
+								input: {
+									agentMessages: [
+										'You are an Executor Fairy. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+									],
+									source: 'other-agent',
+								},
+							})
+						} catch (e) {
+							console.error(`[TeamMode] Auto-dispatch failed for ${executor.id}:`, e)
+						}
+					}
+				}
+			}
+
 			// Planner goes idle after each prompt turn. The coordinator
 			// re-prompts it for review rounds, which triggers onPromptStart
 			// from idling → sets mode back to planning.

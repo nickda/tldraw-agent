@@ -253,9 +253,9 @@ export const AGENT_MODE_DEFINITIONS = [
 		],
 
 		actions: [
-			// Communication
+			// Communication (no ThinkActionUtil: executors over-think on complex
+			// prompts, exhausting output tokens before drawing)
 			MessageActionUtil.type,
-			ThinkActionUtil.type,
 			SetMyViewActionUtil.type,
 
 			// Shared Plan

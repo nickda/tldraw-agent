@@ -99,8 +99,9 @@ app.post('/stream', async (c) => {
 					send(change)
 				}
 			} catch (error: any) {
-				console.error('Stream error:', error)
-				send({ error: error.message })
+				const msg = error?.message || error?.toString?.() || 'Unknown stream error'
+				console.error('Stream error:', msg, error)
+				send({ error: msg })
 			} finally {
 				if (!cancelled) controller.close()
 			}

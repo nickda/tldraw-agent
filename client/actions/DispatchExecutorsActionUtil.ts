@@ -18,24 +18,35 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 		override applyAction(action: Streaming<DispatchExecutorsAction>, _helpers: AgentHelpers) {
 			if (!action.complete) return
 
+			const editor = this.editor
+
 			// Dispatch executors outside the synchronous extractingChanges context.
-			// interrupt() starts async prompt() which needs to run after the current
-			// sync frame completes.
-			setTimeout(() => {
-				const agents = AgentAppAgentsManager.getAgents(this.editor)
+			// Use queueMicrotask (fires before rendering) instead of setTimeout(0)
+			// which can be starved by React reconciliation on large state updates.
+			queueMicrotask(() => {
+				const agents = AgentAppAgentsManager.getAgents(editor)
 				const executors = agents.filter((a) => a.role === 'executor')
 
-				for (const executor of executors) {
-					executor.interrupt({
-						input: {
-							agentMessages: [
-								'You are an Executor Fairy. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
-							],
-							source: 'other-agent',
-						},
-					})
+				if (executors.length === 0) {
+					console.warn('[TeamMode] No executors found at dispatch time')
+					return
 				}
-			}, 0)
+
+				for (const executor of executors) {
+					try {
+						executor.interrupt({
+							input: {
+								agentMessages: [
+									'You are an Executor Fairy. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+								],
+								source: 'other-agent',
+							},
+						})
+					} catch (e) {
+						console.error(`[TeamMode] Failed to dispatch executor ${executor.id}:`, e)
+					}
+				}
+			})
 		}
 	},
 	{ forModes: ['planning'] }

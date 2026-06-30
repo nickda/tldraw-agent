@@ -548,7 +548,9 @@ export class TldrawAgent {
 		if (isCurrentlyActive) {
 			this.requests.setScheduledRequest(request)
 		} else {
-			this.prompt(request)
+			this.prompt(request).catch((e) => {
+				console.error(`[Agent:${this.id}] Scheduled prompt failed:`, e)
+			})
 		}
 	}
 
