@@ -2,19 +2,19 @@ import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } f
 import { useEditor, useValue, VecModel } from 'tldraw'
 import { TldrawAgent } from '../agent/TldrawAgent'
 import { useAgents } from '../agent/TldrawAgentAppProvider'
-import { useFairyPosition } from '../hooks/useFairyPosition'
-import { FairyState } from '../types/FairyState'
-import { FairySprite } from './FairySprite'
-import { FairyReticle } from './FairyReticle'
+import { useBeePosition } from '../hooks/useBeePosition'
+import { BeeState } from '../types/BeeState'
+import { BeeSprite } from './BeeSprite'
+import { BeeReticle } from './BeeReticle'
 
-const FAIRY_MOVE_DURATION_MS = 400
-const FAIRY_ANNOYED_DELAY_MS = 2000
+const BEE_MOVE_DURATION_MS = 400
+const BEE_ANNOYED_DELAY_MS = 2000
 
-export function getFairySpriteScale(zoomLevel: number) {
+export function getBeeSpriteScale(zoomLevel: number) {
 	return zoomLevel > 0 ? 1 / zoomLevel : 1
 }
 
-export function getFairyScreenPosition(
+export function getBeeScreenPosition(
 	pagePosition: VecModel | null,
 	pageToScreen: (pos: VecModel) => VecModel
 ): VecModel | null {
@@ -22,38 +22,38 @@ export function getFairyScreenPosition(
 	return pageToScreen(pagePosition)
 }
 
-export function FairyAvatarOverlays() {
+export function BeeAvatarOverlays() {
 	const agents = useAgents()
 
 	return (
 		<>
 			{agents.map((agent) => (
-				<FairyAvatarOverlay key={agent.id} agent={agent} />
+				<BeeAvatarOverlay key={agent.id} agent={agent} />
 			))}
 		</>
 	)
 }
 
-export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
+export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const editor = useEditor()
-	const fairyName = agent.fairyName
-	const fairyPosition = useFairyPosition(agent)
+	const beeName = agent.beeName
+	const beePosition = useBeePosition(agent)
 	const isActive = useValue(
-		`fairy-active-${agent.id}`,
+		`bee-active-${agent.id}`,
 		() => agent.requests.isGenerating(),
 		[agent]
 	)
-	const [motionState, setMotionState] = useState<FairyState>('idle')
+	const [motionState, setMotionState] = useState<BeeState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const annoyedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const isPressActiveRef = useRef(false)
 	const activePointerIdRef = useRef<number | null>(null)
 	const dragOffsetRef = useRef<VecModel | null>(null)
-	const previousFairyPositionRef = useRef<VecModel | null>(null)
+	const previousBeePositionRef = useRef<VecModel | null>(null)
 	const [isDragging, setIsDragging] = useState(false)
 	const zoomLevel = useValue(
-		'fairyZoomLevel',
+		'beeZoomLevel',
 		() => {
 			editor.getCamera()
 			return editor.getZoomLevel()
@@ -61,7 +61,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		[editor]
 	)
 
-	const pagePosition = fairyPosition
+	const pagePosition = beePosition
 
 
 	const clearAnnoyedTimer = () => {
@@ -102,7 +102,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 				setIsAnnoyed(true)
 			}
 			annoyedTimeoutRef.current = null
-		}, FAIRY_ANNOYED_DELAY_MS)
+		}, BEE_ANNOYED_DELAY_MS)
 	}
 
 	const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -115,7 +115,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		clearAnnoyedTimer()
 
 		const pointerPagePosition = editor.screenToPage({ x: event.clientX, y: event.clientY })
-		agent.requests.setFairyPosition({
+		agent.requests.setBeePosition({
 			x: pointerPagePosition.x + dragOffsetRef.current.x,
 			y: pointerPagePosition.y + dragOffsetRef.current.y,
 		})
@@ -133,8 +133,8 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		if (!pagePosition) return
 		if (activePointerIdRef.current !== null) return
 
-		const hasMoved = didFairyPositionMove(previousFairyPositionRef.current, pagePosition)
-		previousFairyPositionRef.current = pagePosition
+		const hasMoved = didBeePositionMove(previousBeePositionRef.current, pagePosition)
+		previousBeePositionRef.current = pagePosition
 
 		if (!hasMoved) return
 
@@ -145,7 +145,7 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		movementTimeoutRef.current = setTimeout(() => {
 			setMotionState('idle')
 			movementTimeoutRef.current = null
-		}, FAIRY_MOVE_DURATION_MS)
+		}, BEE_MOVE_DURATION_MS)
 	}, [pagePosition])
 
 	useEffect(() => {
@@ -172,11 +172,11 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	if (!pagePosition) return null
 
 	const plannerPlanning = agent.role === 'planner' && isActive && motionState === 'idle'
-	const state: FairyState = isAnnoyed ? 'annoyed' : plannerPlanning ? 'planning' : motionState
+	const state: BeeState = isAnnoyed ? 'annoyed' : plannerPlanning ? 'planning' : motionState
 
 	return (
 		<div
-			className="fairy-avatar-overlay"
+			className="bee-avatar-overlay"
 			style={{
 				position: 'absolute',
 				inset: 0,
@@ -185,14 +185,14 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 			}}
 		>
 			<div
-				className="fairy-avatar-overlay__sprite"
+				className="bee-avatar-overlay__sprite"
 				style={{
 					position: 'absolute',
 					left: pagePosition.x,
 					top: pagePosition.y,
 					transition: isDragging
 						? 'none'
-						: `left ${FAIRY_MOVE_DURATION_MS}ms ease-out, top ${FAIRY_MOVE_DURATION_MS}ms ease-out`,
+						: `left ${BEE_MOVE_DURATION_MS}ms ease-out, top ${BEE_MOVE_DURATION_MS}ms ease-out`,
 					transform: 'translate(-50%, -100%)',
 					pointerEvents: 'auto',
 					cursor: isDragging ? 'grabbing' : 'grab',
@@ -205,20 +205,20 @@ export function FairyAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 			>
 				<div
 					style={{
-						transform: `scale(${getFairySpriteScale(zoomLevel)})`,
+						transform: `scale(${getBeeSpriteScale(zoomLevel)})`,
 						transformOrigin: 'center bottom',
 						position: 'relative',
 					}}
 				>
-					<FairyReticle color={agent.fairyColor} active={isActive} />
-					<FairySprite fairyName={fairyName} state={state} color={agent.fairyColor} />
+					<BeeReticle color={agent.beeColor} active={isActive} />
+					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} />
 				</div>
 			</div>
 		</div>
 	)
 }
 
-export function didFairyPositionMove(
+export function didBeePositionMove(
 	previousPosition: VecModel | null,
 	currentPosition: VecModel | null
 ) {
@@ -229,4 +229,3 @@ export function didFairyPositionMove(
 		previousPosition.y !== currentPosition.y
 	)
 }
-

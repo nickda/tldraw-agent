@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { didFairyPositionMove, getFairyScreenPosition, getFairySpriteScale } from './FairyAvatarOverlay'
+import { didBeePositionMove, getBeeScreenPosition, getBeeSpriteScale } from './BeeAvatarOverlay'
 
-describe('FairyAvatarOverlay styles', () => {
+describe('BeeAvatarOverlay styles', () => {
 	test('uses the expected absolute overlay positioning contract', () => {
 		const markup = renderToStaticMarkup(
 			<div
-				className="fairy-avatar-overlay"
+				className="bee-avatar-overlay"
 				style={{
 					position: 'absolute',
 					inset: 0,
@@ -15,7 +15,7 @@ describe('FairyAvatarOverlay styles', () => {
 				}}
 			>
 				<div
-					className="fairy-avatar-overlay__sprite"
+					className="bee-avatar-overlay__sprite"
 					style={{
 						position: 'absolute',
 						left: 120,
@@ -41,23 +41,23 @@ describe('FairyAvatarOverlay styles', () => {
 	})
 
 	test('only treats page-space position changes as movement', () => {
-		expect(didFairyPositionMove({ x: 10, y: 20 }, { x: 10, y: 20 })).toBe(false)
-		expect(didFairyPositionMove({ x: 10, y: 20 }, { x: 11, y: 20 })).toBe(true)
-		expect(didFairyPositionMove(null, { x: 10, y: 20 })).toBe(false)
-		expect(didFairyPositionMove({ x: 10, y: 20 }, null)).toBe(false)
-		expect(didFairyPositionMove(null, null)).toBe(false)
+		expect(didBeePositionMove({ x: 10, y: 20 }, { x: 10, y: 20 })).toBe(false)
+		expect(didBeePositionMove({ x: 10, y: 20 }, { x: 11, y: 20 })).toBe(true)
+		expect(didBeePositionMove(null, { x: 10, y: 20 })).toBe(false)
+		expect(didBeePositionMove({ x: 10, y: 20 }, null)).toBe(false)
+		expect(didBeePositionMove(null, null)).toBe(false)
 	})
 
 	test('keeps the sprite scale inverse to zoom level', () => {
-		expect(getFairySpriteScale(1)).toBe(1)
-		expect(getFairySpriteScale(2)).toBe(0.5)
-		expect(getFairySpriteScale(0.5)).toBe(2)
-		expect(getFairySpriteScale(0)).toBe(1)
+		expect(getBeeSpriteScale(1)).toBe(1)
+		expect(getBeeSpriteScale(2)).toBe(0.5)
+		expect(getBeeSpriteScale(0.5)).toBe(2)
+		expect(getBeeSpriteScale(0)).toBe(1)
 	})
 
 	test('converts page position to screen position via pageToScreen transform', () => {
 		const pageToScreen = (pos: { x: number; y: number }) => ({ x: pos.x * 2, y: pos.y * 3 })
-		expect(getFairyScreenPosition({ x: 50, y: 40 }, pageToScreen)).toEqual({ x: 100, y: 120 })
-		expect(getFairyScreenPosition(null, pageToScreen)).toBeNull()
+		expect(getBeeScreenPosition({ x: 50, y: 40 }, pageToScreen)).toEqual({ x: 100, y: 120 })
+		expect(getBeeScreenPosition(null, pageToScreen)).toBeNull()
 	})
 })
