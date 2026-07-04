@@ -148,7 +148,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done and reviews are complete. Send a final message to the user (in your warm Scottish voice) summarizing what was drawn and any improvements made during review.',
+								'All plan items are done and reviews are complete. Send a final message to the user (in your dry witty voice) summarizing what was drawn and any improvements made during review.',
 							],
 							source: 'self',
 						},
@@ -157,7 +157,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done. First, send a message (in your warm Scottish voice) describing what you see. Then critically review the drawing. Your bar for "needs fixing" should be LOW: alignment issues, parts not touching that should be, proportions off, missing details, disconnected elements. These are NOT minor. Use delegateFix for EVERY issue you find, no matter how small. Only say the drawing is complete if you genuinely cannot find a single improvement.',
+								'All plan items are done. First, send a message (in your dry witty voice) describing what you see. Then critically review. Check: overlapping/occlusion (are objects covering faces or important parts? Use sendToBack/bringToFront to fix z-order), alignment, proportions, disconnected elements. Your bar for "needs fixing" should be LOW. Use delegateFix for EVERY issue. Only say complete if genuinely nothing to improve.',
 							],
 							source: 'self',
 						},

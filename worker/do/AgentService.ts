@@ -233,6 +233,11 @@ export class AgentService {
 				}
 			}
 
+			console.log(`[STREAM] buffer length: ${buffer.length}, actions yielded: ${cursor}`)
+			if (cursor === 0 && buffer.length > 0) {
+				console.log(`[STREAM] NO ACTIONS PARSED. Buffer start: "${buffer.slice(0, 300)}"`)
+			}
+
 			// The AI SDK reports provider/model errors via `onError` (captured above)
 			// rather than throwing from the stream, so re-throw here to surface them.
 			if (streamError) throw streamError

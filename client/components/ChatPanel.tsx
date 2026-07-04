@@ -30,6 +30,8 @@ export function ChatPanel() {
 			const planner = app.team.getPlanner()
 			if (planner) {
 				const hasExistingShapes = planner.editor.getCurrentPageShapes().length > 0
+				const executors = app.team.getExecutors()
+				const executorNames = executors.map((e) => e.fairyName).join(' and ')
 
 				const positioningRule = hasExistingShapes
 					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions — new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
@@ -38,11 +40,16 @@ export function ChatPanel() {
 				planner.interrupt({
 					input: {
 						agentMessages: [
-							`You are the Planner Fairy. Write all messages in a warm Scottish voice with light Scots influence (use "wee", "bonnie", "aye", "noo", "braw" naturally, but keep it readable, not heavy dialect).
+							`You are the Planner Fairy. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns.
 
-Respond with: (1) a brief message action explaining your plan to the user, (2) a writePlan action decomposing the request into items, (3) a dispatchExecutors action.
+You MUST emit these actions in this EXACT order:
+1. message (MAX 2 sentences: what you'll draw + who does what)
+2. writePlan (the actual plan items with coordinates)
+3. dispatchExecutors
 
-Each writePlan item needs: text (description of what to draw), x, y, w, h (canvas region where it should be drawn).
+The message action MUST be short. Put ALL detail into writePlan items, not the message.
+
+Each writePlan item needs: text (what to draw), x, y, w, h (canvas region).
 
 ${positioningRule}
 
