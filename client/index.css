@@ -29,9 +29,9 @@ body {
 	height: 100%;
 }
 
-/* Fairy */
+/* Bee */
 
-.fairy-sprite {
+.bee-sprite {
 	display: inline-flex;
 	flex-direction: column;
 	align-items: center;
@@ -40,39 +40,47 @@ body {
 	transform-origin: center center;
 }
 
-.fairy-sprite__figure {
+.bee-sprite__figure {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 }
 
-.fairy-sprite__svg {
+.bee-sprite__svg {
 	display: block;
 	overflow: visible;
 	stroke-width: 1.75;
 	transform-origin: center center;
 }
 
-.fairy-sprite--idle .fairy-sprite__figure {
-	animation: fairy-bob 1.5s ease-in-out infinite;
+.bee-sprite--idle .bee-sprite__figure {
+	animation: bee-bob 1.5s ease-in-out infinite;
 }
 
-.fairy-sprite--idle .fairy-sprite__wing,
-.fairy-sprite--drawing .fairy-sprite__wing {
+.bee-sprite--idle .bee-sprite__wing,
+.bee-sprite--drawing .bee-sprite__wing {
 	transform-box: fill-box;
 	transform-origin: center center;
-	animation: fairy-wing-flutter 180ms ease-in-out infinite alternate;
+	animation: bee-wing-flutter 180ms ease-in-out infinite alternate;
 }
 
-.fairy-sprite--drawing .fairy-sprite__svg {
+.bee-sprite--drawing .bee-sprite__svg {
 	transform: translateY(2px) rotate(-4deg);
 }
 
-.fairy-sprite--annoyed .fairy-sprite__figure {
-	animation: fairy-shake 220ms ease-in-out infinite;
+.bee-sprite--annoyed .bee-sprite__figure {
+	animation: bee-shake 220ms ease-in-out infinite;
 }
 
-@keyframes fairy-bob {
+.bee-sprite--slacking .bee-sprite__figure {
+	animation: slacking-wobble 900ms ease-in-out infinite;
+}
+
+.bee-sprite--slacking .bee-sprite__wing {
+	opacity: 0.4;
+}
+
+@keyframes bee-bob {
 	0%,
 	100% {
 		transform: translateY(0);
@@ -83,7 +91,7 @@ body {
 	}
 }
 
-@keyframes fairy-wing-flutter {
+@keyframes bee-wing-flutter {
 	from {
 		transform: rotate(-6deg) scaleY(1);
 	}
@@ -93,7 +101,7 @@ body {
 	}
 }
 
-@keyframes fairy-shake {
+@keyframes bee-shake {
 	0%,
 	100% {
 		transform: translateX(0);
@@ -105,6 +113,17 @@ body {
 
 	75% {
 		transform: translateX(2px);
+	}
+}
+
+@keyframes slacking-wobble {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+
+	50% {
+		transform: rotate(-3deg);
 	}
 }
 
@@ -945,9 +964,9 @@ button.prompt-tag span {
 	white-space: nowrap;
 }
 
-/* Fairy planning animation */
+/* Bee planning animation */
 
-.fairy-sprite__pencil-hand {
+.bee-sprite__pencil-hand {
 	animation: pencil-bob 0.8s ease-in-out infinite;
 }
 
