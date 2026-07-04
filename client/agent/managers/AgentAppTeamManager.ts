@@ -3,13 +3,23 @@ import { AgentAppPlanManager } from './AgentAppPlanManager'
 import { shouldStartReview, MAX_REVIEW_ROUNDS } from './sharedPlan'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { TldrawAgent } from '../TldrawAgent'
-import { getTeamFairySpawnPosition } from '../../utils/fairyPosition'
+import { getTeamBeeSpawnPosition } from '../../utils/beePosition'
 
 const PLANNER_COLOR = '#6366f1'
 const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
 
+/** The Planner's fixed name in Team Mode. Team Mode always has exactly one planner. */
+export const PLANNER_BEE_NAME = 'Beeyonce'
+
 /**
- * Orchestrates Team Mode: creates the Planner and Executor Fairies, routes user
+ * The Executors' fixed names in Team Mode, in spawn order. Team Mode always
+ * spawns exactly two executors, so index 0 is always MacBee and index 1 is
+ * always WannaBee.
+ */
+export const EXECUTOR_BEE_NAMES = ['MacBee', 'WannaBee']
+
+/**
+ * Orchestrates Team Mode: creates the Planner and Executor Bees, routes user
  * prompts to the Planner, and runs the reactive review-loop coordinator.
  */
 export class AgentAppTeamManager extends BaseAgentAppManager {
@@ -61,22 +71,24 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			this.app.agents.deleteAgent(solo.id)
 		}
 
-		// Create all 3 team agents in one batch
+		// Create all 3 team agents in one batch, with fixed names by role/position
 		this.planner = this.app.agents.createAgent(generateAgentId(), {
 			role: 'planner',
-			fairyColor: PLANNER_COLOR,
+			beeName: PLANNER_BEE_NAME,
+			beeColor: PLANNER_COLOR,
 		})
 		this.planner.mode.setMode('planning')
-		this.planner.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, 0))
+		this.planner.requests.setBeePosition(getTeamBeeSpawnPosition(viewportBounds, 0))
 
 		for (let i = 0; i < 2; i++) {
 			const executor = this.app.agents.createAgent(generateAgentId(), {
 				role: 'executor',
-				fairyColor: EXECUTOR_COLORS[i],
+				beeName: EXECUTOR_BEE_NAMES[i],
+				beeColor: EXECUTOR_COLORS[i],
 			})
 			// Don't set mode to 'executing' here. Leave in 'idling' so that
 			// when dispatched, idling.onPromptStart transitions to 'executing'.
-			executor.requests.setFairyPosition(getTeamFairySpawnPosition(viewportBounds, i + 1))
+			executor.requests.setBeePosition(getTeamBeeSpawnPosition(viewportBounds, i + 1))
 			this.executors.push(executor)
 		}
 
@@ -112,7 +124,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		this.planner.interrupt({
 			input: {
 				agentMessages: [
-					`You are the Planner Fairy. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${message}`,
+					`You are ${PLANNER_BEE_NAME}, the Queen Bee planner. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${message}`,
 				],
 				source: 'user',
 			},
@@ -181,7 +193,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					x: item.bounds.x + item.bounds.w / 2,
 					y: item.bounds.y + item.bounds.h / 2,
 				}
-				this.planner.requests.setFairyPosition(pos)
+				this.planner.requests.setBeePosition(pos)
 				await new Promise((resolve) => setTimeout(resolve, 1500))
 			}
 		}
