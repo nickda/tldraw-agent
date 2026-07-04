@@ -2,18 +2,18 @@ import { FocusedShape } from '../../shared/format/FocusedShape'
 import { AgentAction } from '../../shared/types/AgentAction'
 import { Streaming } from '../../shared/types/Streaming'
 
-export type FairyPosition = { x: number; y: number }
+export type BeePosition = { x: number; y: number }
 type BoundsLike = { x: number; y: number; w: number; h: number }
 type ShapeRecordLike = { id: string; typeName: string }
 type ShapeDiffLike = {
 	added: Record<string, ShapeRecordLike>
 	updated: Record<string, [ShapeRecordLike, ShapeRecordLike]>
 }
-type FairyBoundsPlacement = 'center' | 'resting'
+type BeeBoundsPlacement = 'center' | 'resting'
 
-const FAIRY_RESTING_OFFSET_SCREEN_PX = 48
+const BEE_RESTING_OFFSET_SCREEN_PX = 48
 
-export function getDefaultFairySpawnPosition(
+export function getDefaultBeeSpawnPosition(
 	viewportBounds: {
 		x: number
 		y: number
@@ -21,7 +21,7 @@ export function getDefaultFairySpawnPosition(
 		h: number
 	},
 	index = 0
-): FairyPosition {
+): BeePosition {
 	const center = {
 		x: viewportBounds.x + viewportBounds.w / 2,
 		y: viewportBounds.y + viewportBounds.h / 2,
@@ -43,10 +43,10 @@ export function getDefaultFairySpawnPosition(
 
 const TEAM_FORMATION_OFFSET = 120
 
-export function getTeamFairySpawnPosition(
+export function getTeamBeeSpawnPosition(
 	viewportBounds: { x: number; y: number; w: number; h: number },
 	roleIndex: number
-): FairyPosition {
+): BeePosition {
 	const center = {
 		x: viewportBounds.x + viewportBounds.w / 2,
 		y: viewportBounds.y + viewportBounds.h / 2,
@@ -60,11 +60,11 @@ export function getTeamFairySpawnPosition(
 	}
 }
 
-export function extractFairyPositionFromDiff(
+export function extractBeePositionFromDiff(
 	diff: ShapeDiffLike,
 	getShapePageBounds: (shapeId: string) => BoundsLike | null | undefined,
-	options: { placement?: FairyBoundsPlacement; zoomLevel?: number } = {}
-): FairyPosition | null {
+	options: { placement?: BeeBoundsPlacement; zoomLevel?: number } = {}
+): BeePosition | null {
 	const changedShapeIds = [
 		...Object.values(diff.added)
 			.filter((record) => record.typeName === 'shape')
@@ -81,16 +81,16 @@ export function extractFairyPositionFromDiff(
 	const bounds = getShapePageBounds(shapeId)
 	if (!bounds) return null
 
-	return getFairyPositionFromBounds(bounds, options.placement ?? 'center', options.zoomLevel)
+	return getBeePositionFromBounds(bounds, options.placement ?? 'center', options.zoomLevel)
 }
 
-export function getFairyPositionFromBounds(
+export function getBeePositionFromBounds(
 	bounds: BoundsLike,
-	placement: FairyBoundsPlacement,
+	placement: BeeBoundsPlacement,
 	zoomLevel = 1
-): FairyPosition {
+): BeePosition {
 	if (placement === 'resting') {
-		const pageOffset = FAIRY_RESTING_OFFSET_SCREEN_PX / (zoomLevel > 0 ? zoomLevel : 1)
+		const pageOffset = BEE_RESTING_OFFSET_SCREEN_PX / (zoomLevel > 0 ? zoomLevel : 1)
 		return {
 			x: bounds.x + bounds.w + pageOffset,
 			y: bounds.y + bounds.h + pageOffset,
@@ -103,11 +103,11 @@ export function getFairyPositionFromBounds(
 	}
 }
 
-export function extractFairyPosition(
+export function extractBeePosition(
 	action: Streaming<AgentAction>,
-	normalize?: (position: FairyPosition) => FairyPosition
-): FairyPosition | null {
-	let position: FairyPosition | null
+	normalize?: (position: BeePosition) => BeePosition
+): BeePosition | null {
+	let position: BeePosition | null
 
 	switch (action._type) {
 		case 'create':
@@ -128,7 +128,7 @@ export function extractFairyPosition(
 	return position && normalize ? normalize(position) : position
 }
 
-function getFocusedShapeCentroid(shape: Partial<FocusedShape>): FairyPosition | null {
+function getFocusedShapeCentroid(shape: Partial<FocusedShape>): BeePosition | null {
 	switch (shape._type) {
 		case 'arrow':
 		case 'line':
@@ -148,7 +148,7 @@ function getFocusedShapeCentroid(shape: Partial<FocusedShape>): FairyPosition | 
 	}
 }
 
-function getPointsBoundsCenter(points: Array<{ x: number; y: number }> | undefined): FairyPosition | null {
+function getPointsBoundsCenter(points: Array<{ x: number; y: number }> | undefined): BeePosition | null {
 	if (!points || points.length === 0) return null
 
 	let minX = Infinity

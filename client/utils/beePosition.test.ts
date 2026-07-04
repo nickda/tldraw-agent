@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import {
-	extractFairyPosition,
-	extractFairyPositionFromDiff,
-	getDefaultFairySpawnPosition,
-	getFairyPositionFromBounds,
-} from './fairyPosition'
+	extractBeePosition,
+	extractBeePositionFromDiff,
+	getDefaultBeeSpawnPosition,
+	getBeePositionFromBounds,
+} from './beePosition'
 
-describe('extractFairyPosition', () => {
+describe('extractBeePosition', () => {
 	const normalizeFromChatOrigin = ({ x, y }: { x: number; y: number }) => ({
 		x: x + 100,
 		y: y + 200,
@@ -14,7 +14,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns the center of a geo shape created by the agent', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'create',
 				complete: true,
 				time: 0,
@@ -36,7 +36,7 @@ describe('extractFairyPosition', () => {
 
 	test('normalizes a created shape position to page space', () => {
 		expect(
-			extractFairyPosition(
+			extractBeePosition(
 				{
 					_type: 'create',
 					complete: true,
@@ -61,7 +61,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns the midpoint of a created line', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'create',
 				complete: true,
 				time: 0,
@@ -82,7 +82,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns the move target coordinates', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'move',
 				anchor: 'center',
 				complete: true,
@@ -97,7 +97,7 @@ describe('extractFairyPosition', () => {
 
 	test('normalizes move target coordinates to page space', () => {
 		expect(
-			extractFairyPosition(
+			extractBeePosition(
 				{
 					_type: 'move',
 					anchor: 'center',
@@ -115,7 +115,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns the bounds center of a pen stroke', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'pen',
 				closed: false,
 				color: 'black',
@@ -136,7 +136,7 @@ describe('extractFairyPosition', () => {
 
 	test('normalizes pen stroke bounds center to page space', () => {
 		expect(
-			extractFairyPosition(
+			extractBeePosition(
 				{
 					_type: 'pen',
 					closed: false,
@@ -160,7 +160,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns null for non-spatial actions', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'think',
 				complete: true,
 				text: 'Thinking',
@@ -171,7 +171,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns null for draw shapes because pen-stroke position is tracked via diff bounds', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'create',
 				complete: true,
 				time: 0,
@@ -188,7 +188,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns null for setMyView because camera movement is not drawing position', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'setMyView',
 				complete: true,
 				h: 40,
@@ -203,7 +203,7 @@ describe('extractFairyPosition', () => {
 
 	test('returns null for align because the action payload has no coordinates', () => {
 		expect(
-			extractFairyPosition({
+			extractBeePosition({
 				_type: 'align',
 				alignment: 'top',
 				complete: true,
@@ -216,16 +216,16 @@ describe('extractFairyPosition', () => {
 	})
 })
 
-describe('extractFairyPositionFromDiff', () => {
+describe('extractBeePositionFromDiff', () => {
 	test('returns null when diff is empty', () => {
 		expect(
-			extractFairyPositionFromDiff({ added: {}, updated: {} }, () => ({ x: 0, y: 0, w: 10, h: 10 }))
+			extractBeePositionFromDiff({ added: {}, updated: {} }, () => ({ x: 0, y: 0, w: 10, h: 10 }))
 		).toBeNull()
 	})
 
 	test('returns null when getShapePageBounds returns null', () => {
 		expect(
-			extractFairyPositionFromDiff(
+			extractBeePositionFromDiff(
 				{ added: { 'shape:x': { id: 'shape:x', typeName: 'shape' } }, updated: {} },
 				() => null
 			)
@@ -234,7 +234,7 @@ describe('extractFairyPositionFromDiff', () => {
 
 	test('returns the center of the last changed editor shape bounds', () => {
 		expect(
-			extractFairyPositionFromDiff(
+			extractBeePositionFromDiff(
 				{
 					added: {
 						'shape:dot-1': { id: 'shape:dot-1', typeName: 'shape' },
@@ -251,7 +251,7 @@ describe('extractFairyPositionFromDiff', () => {
 
 	test('ignores non-shape diffs', () => {
 		expect(
-			extractFairyPositionFromDiff(
+			extractBeePositionFromDiff(
 				{
 					added: {
 						'instance:camera': { id: 'instance:camera', typeName: 'instance' },
@@ -265,7 +265,7 @@ describe('extractFairyPositionFromDiff', () => {
 
 	test('returns a resting position outside the changed shape bounds', () => {
 		expect(
-			extractFairyPositionFromDiff(
+			extractBeePositionFromDiff(
 				{
 					added: {
 						'shape:dot-1': { id: 'shape:dot-1', typeName: 'shape' },
@@ -281,7 +281,7 @@ describe('extractFairyPositionFromDiff', () => {
 	test('scales resting offset by zoom level', () => {
 		// bounds {x:140, y:60, w:20, h:20}, zoom=0.5 → pageOffset=96 → x=140+20+96=256, y=60+20+96=176
 		expect(
-			extractFairyPositionFromDiff(
+			extractBeePositionFromDiff(
 				{
 					added: {
 						'shape:dot-1': { id: 'shape:dot-1', typeName: 'shape' },
@@ -295,34 +295,34 @@ describe('extractFairyPositionFromDiff', () => {
 	})
 })
 
-describe('getFairyPositionFromBounds', () => {
+describe('getBeePositionFromBounds', () => {
 	test('returns either the bounds center or a resting position outside the bounds', () => {
 		const bounds = { x: 10, y: 20, w: 80, h: 40 }
 
-		expect(getFairyPositionFromBounds(bounds, 'center')).toEqual({ x: 50, y: 40 })
-		expect(getFairyPositionFromBounds(bounds, 'resting')).toEqual({ x: 138, y: 108 })
+		expect(getBeePositionFromBounds(bounds, 'center')).toEqual({ x: 50, y: 40 })
+		expect(getBeePositionFromBounds(bounds, 'resting')).toEqual({ x: 138, y: 108 })
 	})
 
 	test('falls back to zoom=1 when zoom is 0 to avoid Infinity position', () => {
 		const bounds = { x: 10, y: 20, w: 80, h: 40 }
-		expect(getFairyPositionFromBounds(bounds, 'resting', 0)).toEqual({ x: 138, y: 108 })
+		expect(getBeePositionFromBounds(bounds, 'resting', 0)).toEqual({ x: 138, y: 108 })
 	})
 
 	test('scales resting offset by zoom level so clearance stays constant in screen space', () => {
 		const bounds = { x: 10, y: 20, w: 80, h: 40 }
 		// zoom=0.5 → pageOffset = 48/0.5 = 96
-		expect(getFairyPositionFromBounds(bounds, 'resting', 0.5)).toEqual({ x: 186, y: 156 })
+		expect(getBeePositionFromBounds(bounds, 'resting', 0.5)).toEqual({ x: 186, y: 156 })
 		// zoom=2 → pageOffset = 48/2 = 24
-		expect(getFairyPositionFromBounds(bounds, 'resting', 2)).toEqual({ x: 114, y: 84 })
+		expect(getBeePositionFromBounds(bounds, 'resting', 2)).toEqual({ x: 114, y: 84 })
 		// zoom=1 (default) unchanged
-		expect(getFairyPositionFromBounds(bounds, 'resting', 1)).toEqual({ x: 138, y: 108 })
+		expect(getBeePositionFromBounds(bounds, 'resting', 1)).toEqual({ x: 138, y: 108 })
 	})
 })
 
-describe('getDefaultFairySpawnPosition', () => {
+describe('getDefaultBeeSpawnPosition', () => {
 	test('returns the viewport center', () => {
 		expect(
-			getDefaultFairySpawnPosition({
+			getDefaultBeeSpawnPosition({
 				x: 40,
 				y: 80,
 				w: 200,
@@ -333,7 +333,7 @@ describe('getDefaultFairySpawnPosition', () => {
 
 	test('spreads later spawn positions around the center', () => {
 		expect(
-			getDefaultFairySpawnPosition({
+			getDefaultBeeSpawnPosition({
 				x: 40,
 				y: 80,
 				w: 200,
@@ -342,7 +342,7 @@ describe('getDefaultFairySpawnPosition', () => {
 		).toEqual({ x: 220, y: 140 })
 
 		expect(
-			getDefaultFairySpawnPosition({
+			getDefaultBeeSpawnPosition({
 				x: 40,
 				y: 80,
 				w: 200,
