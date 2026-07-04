@@ -10,7 +10,7 @@ export type SharedPlan = TodoItem[]
 /**
  * The maximum number of review rounds in a Team Mode run: the inspection after
  * the build, plus at most one fix pass. The Review Loop is hard-capped here so
- * the Fairies cannot loop forever burning time and tokens.
+ * the Bees cannot loop forever burning time and tokens.
  */
 export const MAX_REVIEW_ROUNDS = 3
 

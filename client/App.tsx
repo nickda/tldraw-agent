@@ -16,7 +16,7 @@ import {
 import { ChatPanel } from './components/ChatPanel'
 import { ChatPanelFallback } from './components/ChatPanelFallback'
 import { CustomHelperButtons } from './components/CustomHelperButtons'
-import { FairyAvatarOverlays } from './components/FairyAvatarOverlay'
+import { BeeAvatarOverlays } from './components/BeeAvatarOverlay'
 import { TeamRoster } from './components/TeamRoster'
 import { AgentViewportBoundsHighlights } from './components/highlights/AgentViewportBoundsHighlights'
 import { AllContextHighlights } from './components/highlights/ContextHighlights'
@@ -76,7 +76,7 @@ function App() {
 					<TldrawOverlays />
 					{app && (
 						<TldrawAgentAppContextProvider app={app}>
-							<FairyAvatarOverlays />
+							<BeeAvatarOverlays />
 							<AgentViewportBoundsHighlights />
 							<AllContextHighlights />
 						</TldrawAgentAppContextProvider>

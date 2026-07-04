@@ -424,7 +424,7 @@ export const DispatchExecutorsAction = z
 	.meta({
 		title: 'Dispatch Executors',
 		description:
-			'The Planner dispatches the Executor Fairies to start claiming and drawing Plan Items from the Shared Plan.',
+			'The Planner dispatches the Executor Bees to start claiming and drawing Plan Items from the Shared Plan.',
 	})
 
 export type DispatchExecutorsAction = z.infer<typeof DispatchExecutorsAction>
