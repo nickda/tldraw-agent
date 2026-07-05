@@ -31,7 +31,7 @@ export function ChatPanel() {
 			if (planner) {
 				const hasExistingShapes = planner.editor.getCurrentPageShapes().length > 0
 				const executors = app.team.getExecutors()
-				const executorNames = executors.map((e) => e.fairyName).join(' and ')
+				const executorNames = executors.map((e) => e.beeName).join(' and ')
 
 				const positioningRule = hasExistingShapes
 					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions — new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
@@ -40,7 +40,9 @@ export function ChatPanel() {
 				planner.interrupt({
 					input: {
 						agentMessages: [
-							`You are the Planner Fairy. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns.
+							`You are Beeyonce, the Queen Bee planner. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns.
+
+If you narrate MacBee's work, give MacBee a Scottish-inflected, provocative turn of phrase. If WannaBee appears to be pausing or slow to finish her claimed item, react with mild exasperation/grumbling about her slacking, in your own dry voice — don't invent new mechanics, just narrate it.
 
 You MUST emit these actions in this EXACT order:
 1. message (MAX 2 sentences: what you'll draw + who does what)
