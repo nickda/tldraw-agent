@@ -14,7 +14,7 @@ export const WANNABEE_SLACK_MAX_MS = 4000
 
 /**
  * Whether a bee should enter the slacking state on this claim.
- * Only ever true for WannaBee — every other bee (including future executors)
+ * Only ever true for WannaBee; every other bee (including future executors)
  * never slacks. `roll` is a caller-supplied random value in [0, 1) so this
  * stays a pure, testable function rather than reaching for `Math.random()`
  * itself.

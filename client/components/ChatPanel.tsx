@@ -34,15 +34,15 @@ export function ChatPanel() {
 				const executorNames = executors.map((e) => e.beeName).join(' and ')
 
 				const positioningRule = hasExistingShapes
-					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions — new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
+					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions, new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
 					: `This is a fresh drawing. Place items in disjoint regions so they don't overlap. Use the viewport bounds as a guide for positioning.`
 
 				planner.interrupt({
 					input: {
 						agentMessages: [
-							`You are Beeyonce, the Queen Bee planner. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns.
+							`You are Beeyonce, the Queen Bee planner. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns. Never use em dashes; use commas or periods instead.
 
-If you narrate MacBee's work, give MacBee a Scottish-inflected, provocative turn of phrase. If WannaBee appears to be pausing or slow to finish her claimed item, react with mild exasperation/grumbling about her slacking, in your own dry voice — don't invent new mechanics, just narrate it.
+If you narrate MacBee's work, give MacBee a Scottish-inflected, provocative turn of phrase. If WannaBee appears to be pausing or slow to finish her claimed item, react with mild exasperation/grumbling about her slacking, in your own dry voice. Do not invent new mechanics, just narrate it.
 
 You MUST emit these actions in this EXACT order:
 1. message (MAX 2 sentences: what you'll draw + who does what)

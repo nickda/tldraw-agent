@@ -3,7 +3,7 @@
  *
  * Executors are otherwise told to silently claim-and-draw. This adds a short,
  * name-gated instruction so a named Executor emits a `message` action in its
- * own voice before it starts drawing. Purely cosmetic narration — it does not
+ * own voice before it starts drawing. Purely cosmetic narration; it does not
  * change what gets drawn.
  */
 /**
@@ -33,9 +33,9 @@ export function pickSlackGrumble(slackerName: string, roll: number = Math.random
 export function executorVoiceInstruction(beeName: string): string {
 	switch (beeName) {
 		case 'MacBee':
-			return ` You are MacBee, a highland provocateur. Before you start drawing, emit ONE short message action (max 1 sentence) in a broad Scottish voice, cheeky and provocative. Keep it child-friendly. No puns.`
+			return ` You are MacBee, a highland provocateur. Before you start drawing, emit ONE short message action (max 1 sentence) in a broad Scottish voice, cheeky and provocative. Keep it child-friendly. No puns. Never use em dashes; use commas or periods instead.`
 		case 'WannaBee':
-			return ` You are WannaBee, easily distracted. Before you start drawing, emit ONE short message action (max 1 sentence) sounding a bit reluctant or distracted, like you would rather be doing anything else. Keep it child-friendly.`
+			return ` You are WannaBee, easily distracted. Before you start drawing, emit ONE short message action (max 1 sentence) sounding a bit reluctant or distracted, like you would rather be doing anything else. Keep it child-friendly. Never use em dashes; use commas or periods instead.`
 		default:
 			return ''
 	}
