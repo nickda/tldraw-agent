@@ -47,7 +47,7 @@ describe('BeeSprite', () => {
 
 		expect(queenMarkup).toContain('bee-sprite__queen-regalia')
 		expect(queenMarkup).toContain('bee-sprite__crown')
-		expect(queenMarkup).toContain('bee-sprite__sash')
+		expect(queenMarkup).not.toContain('bee-sprite__sash')
 		expect(otherMarkup).not.toContain('bee-sprite__queen-regalia')
 	})
 

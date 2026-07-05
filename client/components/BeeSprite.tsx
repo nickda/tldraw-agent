@@ -127,17 +127,10 @@ function QueenRegalia() {
 			<polygon
 				className="bee-sprite__crown"
 				points="14,8 24,2 34,8 31,14 17,14"
-				fill="#FFD700"
-				stroke="#B8860B"
+				fill="#E0E0E0"
+				stroke="#9E9E9E"
 				strokeWidth="1"
 				strokeLinejoin="round"
-			/>
-			<path
-				className="bee-sprite__sash"
-				d="M15 20L33 42"
-				stroke="#8B008B"
-				strokeWidth="3"
-				opacity="0.85"
 			/>
 		</g>
 	)
