@@ -235,6 +235,26 @@ body {
 .chat-header {
 	display: flex;
 	justify-content: flex-end;
+	align-items: center;
+	gap: 4px;
+}
+
+.clear-all-button {
+	height: 32px;
+	padding: 0 10px;
+	font-size: 13px;
+	font-weight: 500;
+	appearance: none;
+	border: 0;
+	border-radius: 4px;
+	cursor: pointer;
+	background: none;
+	margin: 2px;
+	color: var(--tl-color-text);
+}
+
+.clear-all-button:hover {
+	background-color: var(--tl-color-muted-2);
 }
 
 .new-chat-button {

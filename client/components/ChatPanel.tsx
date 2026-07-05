@@ -75,10 +75,36 @@ User request: ${value}`,
 		}
 	}, [app])
 
+	const handleClearAll = useCallback(() => {
+		if (!window.confirm('Clear everything? This deletes the chat history and all shapes on the canvas.')) {
+			return
+		}
+		// Wipe the canvas. Agent-drawn shapes are often locked, and
+		// deleteShapes skips locked shapes by default, so delete inside a run
+		// with ignoreShapeLock (the same escape hatch the agent itself uses).
+		const editor = app.editor
+		const shapeIds = editor.getCurrentPageShapeIds()
+		if (shapeIds.size > 0) {
+			editor.run(() => editor.deleteShapes(Array.from(shapeIds)), { ignoreShapeLock: true })
+		}
+		// Reset the shared plan and every agent's chat/state.
+		app.plan.reset()
+		for (const a of app.agents.getAgents()) {
+			a.reset()
+		}
+	}, [app])
+
 	return (
 		<div className="chat-panel tl-theme__dark">
 			<div className="chat-header">
-				<button className="new-chat-button" onClick={handleNewChat}>
+				<button
+					className="clear-all-button"
+					onClick={handleClearAll}
+					title="Clear chat history and canvas"
+				>
+					Clear
+				</button>
+				<button className="new-chat-button" onClick={handleNewChat} title="New chat">
 					+
 				</button>
 			</div>
