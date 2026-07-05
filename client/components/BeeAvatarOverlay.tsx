@@ -10,7 +10,7 @@ import { BeeReticle } from './BeeReticle'
 
 const BEE_MOVE_DURATION_MS = 400
 const BEE_ANNOYED_DELAY_MS = 2000
-const BEE_SPEECH_DURATION_MS = 6000
+const BEE_SPEECH_DURATION_MS = 12000
 
 export function getBeeSpriteScale(zoomLevel: number) {
 	return zoomLevel > 0 ? 1 / zoomLevel : 1
