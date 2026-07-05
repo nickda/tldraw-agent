@@ -6,6 +6,30 @@
  * own voice before it starts drawing. Purely cosmetic narration — it does not
  * change what gets drawn.
  */
+/**
+ * Dry, deadpan grumbles the Planner (Beeyonce) fires when an Executor starts
+ * slacking. Kept child-friendly and in her voice. `{name}` is replaced with
+ * the slacker's name.
+ */
+const SLACK_GRUMBLES = [
+	'{name}, the canvas will not paint itself.',
+	'And there goes {name}, phone out, brush down. Marvellous.',
+	'{name} is "taking a moment" again. We are all so lucky.',
+	'Any day now, {name}. Any day.',
+	'I see {name} has swapped drawing for admiring the ceiling.',
+	'{name}, dear, the bees who finish get the flowers.',
+]
+
+/**
+ * Pick a slack grumble for the given slacker, name substituted in. `roll` is a
+ * caller-supplied random value in [0, 1) so callers stay testable; defaults to
+ * Math.random() for production use.
+ */
+export function pickSlackGrumble(slackerName: string, roll: number = Math.random()): string {
+	const index = Math.floor(roll * SLACK_GRUMBLES.length) % SLACK_GRUMBLES.length
+	return SLACK_GRUMBLES[index].replace('{name}', slackerName)
+}
+
 export function executorVoiceInstruction(beeName: string): string {
 	switch (beeName) {
 		case 'MacBee':

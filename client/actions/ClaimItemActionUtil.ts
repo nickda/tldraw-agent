@@ -1,6 +1,7 @@
 import { ClaimItemAction } from '../../shared/schema/AgentActionSchemas'
 import { Streaming } from '../../shared/types/Streaming'
 import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
+import { AgentAppTeamManager } from '../agent/managers/AgentAppTeamManager'
 import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
 
@@ -50,6 +51,7 @@ export const ClaimItemActionUtil = registerActionUtil(
 
 			if (shouldSlack(this.agent.beeName, Math.random())) {
 				this.agent.requests.setSlacking(true)
+				AgentAppTeamManager.triggerSlackGrumble(this.agent.beeName)
 				await new Promise((resolve) => setTimeout(resolve, getSlackDurationMs(Math.random())))
 				this.agent.requests.setSlacking(false)
 			}

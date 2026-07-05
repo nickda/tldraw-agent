@@ -4,6 +4,7 @@ import { shouldStartReview, MAX_REVIEW_ROUNDS } from './sharedPlan'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { TldrawAgent } from '../TldrawAgent'
 import { getTeamBeeSpawnPosition } from '../../utils/beePosition'
+import { pickSlackGrumble } from '../executorVoice'
 
 const PLANNER_COLOR = '#6366f1'
 const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
@@ -37,6 +38,26 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 
 	static triggerReviewCheck() {
 		AgentAppTeamManager.instance?.checkReviewLoop()
+	}
+
+	/**
+	 * Make the Planner (Beeyonce) grumble about an Executor slacking. Called
+	 * from ClaimItemActionUtil when WannaBee enters her slacking pause, so the
+	 * queen reliably reacts instead of only maybe mentioning it in narration.
+	 */
+	static triggerSlackGrumble(slackerName: string) {
+		AgentAppTeamManager.instance?.grumbleAboutSlacker(slackerName)
+	}
+
+	private grumbleAboutSlacker(slackerName: string) {
+		if (!this.planner) return
+		const grumble = pickSlackGrumble(slackerName)
+		this.planner.chat.push({
+			type: 'action',
+			action: { _type: 'message', text: grumble, complete: true, time: 0 },
+			diff: { added: {}, updated: {}, removed: {} },
+			acceptance: 'accepted',
+		})
 	}
 
 	/**
