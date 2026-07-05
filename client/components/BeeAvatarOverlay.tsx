@@ -204,6 +204,18 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 
 	if (!pagePosition) return null
 
+	// The two executors draw in adjacent regions and end up ~60px apart, so
+	// their centered speech bubbles overlap. Fan them outward by name: MacBee
+	// (always the left executor) grows its bubble left, WannaBee (always right)
+	// grows right, so the bubbles can never cover each other. Everyone else
+	// (the centered planner, solo mode) keeps the default centered bubble.
+	const speechSideClass =
+		beeName === 'MacBee'
+			? ' bee-speech-bubble--left'
+			: beeName === 'WannaBee'
+				? ' bee-speech-bubble--right'
+				: ''
+
 	const plannerPlanning = agent.role === 'planner' && isActive && motionState === 'idle'
 	const state: BeeState = isSlacking
 		? 'slacking'
@@ -250,7 +262,10 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 					}}
 				>
 					{visibleSpeech && (
-						<div className="bee-speech-bubble" style={{ borderColor: agent.beeColor, color: agent.beeColor }}>
+						<div
+							className={`bee-speech-bubble${speechSideClass}`}
+							style={{ borderColor: agent.beeColor, color: agent.beeColor }}
+						>
 							<span className="bee-speech-bubble__text">{visibleSpeech}</span>
 						</div>
 					)}

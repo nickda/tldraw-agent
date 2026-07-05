@@ -91,6 +91,53 @@ body {
 	}
 }
 
+/*
+ * Executor bubbles fan outward so MacBee's and WannaBee's can't overlap when
+ * the sprites sit ~60px apart. --left (MacBee) pins its right edge near the
+ * sprite center and grows left; --right (WannaBee) pins its left edge and
+ * grows right. Tails move to the inner-bottom corner so they still point at
+ * the bee. These use their own translateX-free pop so the anchoring holds.
+ */
+.bee-speech-bubble--left {
+	left: auto;
+	right: 50%;
+	transform: none;
+	animation: bee-speech-pop-flip 160ms ease-out;
+}
+
+.bee-speech-bubble--right {
+	left: 50%;
+	right: auto;
+	transform: none;
+	animation: bee-speech-pop-flip 160ms ease-out;
+}
+
+.bee-speech-bubble--left::before,
+.bee-speech-bubble--left::after {
+	left: auto;
+	right: 10px;
+	transform: none;
+}
+
+.bee-speech-bubble--right::before,
+.bee-speech-bubble--right::after {
+	left: 10px;
+	right: auto;
+	transform: none;
+}
+
+@keyframes bee-speech-pop-flip {
+	from {
+		opacity: 0;
+		transform: translateY(4px) scale(0.9);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
 .bee-sprite {
 	display: inline-flex;
 	flex-direction: column;
