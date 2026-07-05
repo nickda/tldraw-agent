@@ -64,7 +64,9 @@ const app = new Hono()
 
 app.post('/stream', async (c) => {
 	const prompt = (await c.req.json()) as AgentPrompt
-	console.log('[STREAM] mode:', prompt.mode?.modeType, 'actions:', prompt.mode?.actionTypes?.length)
+	const agentMsgs = (prompt as any).messages?.agentMessages
+	console.log('[STREAM] mode:', prompt.mode?.modeType, 'actions:', prompt.mode?.actionTypes?.length,
+		agentMsgs ? `msg: "${(agentMsgs[0] || '').slice(0, 100)}"` : '')
 
 	// Pin the model per backend mode. In 'bedrock' mode every prompt runs on the
 	// chosen Bedrock model. In 'local' mode force `local` unless the client picked

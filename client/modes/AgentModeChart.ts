@@ -130,12 +130,13 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
-			// If a plan exists but executors are idle (model wrote writePlan
-			// but didn't emit dispatchExecutors), auto-dispatch.
+			// Auto-dispatch if plan has unclaimed items and no executor is working.
+			// Skip if items are already in-progress (dispatchExecutors handled it).
 			const plan = AgentAppPlanManager.getPlan(agent.editor)
 			const hasTodoItems = plan.some((item) => item.status === 'todo')
+			const hasInProgress = plan.some((item) => item.status === 'in-progress')
 
-			if (hasTodoItems) {
+			if (hasTodoItems && !hasInProgress) {
 				const agents = AgentAppAgentsManager.getAgents(agent.editor)
 				const executors = agents.filter((a) => a.role === 'executor')
 				const executorsIdle = executors.every((e) => !e.requests.isGenerating())

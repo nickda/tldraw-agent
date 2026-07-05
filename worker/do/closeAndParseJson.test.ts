@@ -47,4 +47,25 @@ describe('closeAndParseJson', () => {
 		const result = closeAndParseJson('{"text": "say \\"hello\\""}')
 		expect(result).toEqual({ text: 'say "hello"' })
 	})
+
+	test('strips a trailing markdown code fence after the JSON closes', () => {
+		// Bedrock (prefill disabled) wraps its output in ```json ... ``` and the
+		// buffer ends with a trailing fence after the top-level object closes.
+		// Without trimming, JSON.parse throws "Unexpected non-whitespace character
+		// after JSON" and the whole response is dropped.
+		const withTrailingFence = '```json\n{"actions": [{"_type": "writePlan"}]}\n```'
+		const result = closeAndParseJson(withTrailingFence)
+		expect(result).toEqual({ actions: [{ _type: 'writePlan' }] })
+	})
+
+	test('ignores trailing prose after a complete top-level object', () => {
+		const withTrailingProse = '{"actions": [{"_type": "message"}]}\n\nWould you like changes?'
+		const result = closeAndParseJson(withTrailingProse)
+		expect(result).toEqual({ actions: [{ _type: 'message' }] })
+	})
+
+	test('does not truncate at a brace that closes inside a string', () => {
+		const result = closeAndParseJson('{"text": "a } brace"}\ntrailing')
+		expect(result).toEqual({ text: 'a } brace' })
+	})
 })

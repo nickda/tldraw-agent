@@ -47,10 +47,22 @@ export function closeAndParseJson(string: string) {
 
 		if (char === '}' && lastOpening === '{') {
 			stackOfOpenings.pop()
+			// If that closed the top-level container, discard any trailing content
+			// (e.g. a markdown ``` fence or prose the model appended after the JSON).
+			// Otherwise JSON.parse throws "Unexpected non-whitespace character after
+			// JSON" and the entire response is dropped.
+			if (stackOfOpenings.length === 0) {
+				string = string.slice(0, i + 1)
+				break
+			}
 		}
 
 		if (char === ']' && lastOpening === '[') {
 			stackOfOpenings.pop()
+			if (stackOfOpenings.length === 0) {
+				string = string.slice(0, i + 1)
+				break
+			}
 		}
 
 		i++

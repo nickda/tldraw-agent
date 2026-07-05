@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.0.2] - 2026-07-05
+
+### Fixed
+
+- Team Mode planner no longer intermittently stalls after planning. The response parser stripped a leading markdown code fence but not a trailing one, so when a model wrapped its output in ```` ```json ... ``` ````, the closing fence made JSON.parse fail and the whole response was dropped, leaving the plan unwritten and the executors idle. The parser now discards any trailing content once the top-level JSON object closes. This mainly affected the Bedrock backend, which gets no assistant prefill and is the most likely to emit fenced output.
+
 ## [0.1.0.1] - 2026-05-03
 
 ### Fixed
