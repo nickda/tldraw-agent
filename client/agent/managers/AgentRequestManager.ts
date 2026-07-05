@@ -33,6 +33,12 @@ export class AgentRequestManager extends BaseAgentManager {
 	private $beePosition: Atom<{ x: number; y: number } | null>
 
 	/**
+	 * Whether the Bee is currently in its "slacking" pause (WannaBee-only,
+	 * see `ClaimItemActionUtil`). Drives the `slacking` sprite pose.
+	 */
+	private $isSlacking: Atom<boolean>
+
+	/**
 	 * A function that cancels the agent's current prompt, if one is active.
 	 */
 	private cancelFn: (() => void) | null = null
@@ -47,6 +53,7 @@ export class AgentRequestManager extends BaseAgentManager {
 		this.$scheduledRequest = atom('scheduledRequest', null)
 		this.$isPrompting = atom('isPrompting', false)
 		this.$beePosition = atom('beePosition', null)
+		this.$isSlacking = atom('isSlacking', false)
 	}
 
 	/**
@@ -57,6 +64,7 @@ export class AgentRequestManager extends BaseAgentManager {
 		this.$activeRequest.set(null)
 		this.$scheduledRequest.set(null)
 		this.$isPrompting.set(false)
+		this.$isSlacking.set(false)
 		this.cancelFn = null
 	}
 
@@ -162,6 +170,20 @@ export class AgentRequestManager extends BaseAgentManager {
 	 */
 	getBeePosition() {
 		return this.$beePosition.get()
+	}
+
+	/**
+	 * Set whether the Bee is currently slacking.
+	 */
+	setSlacking(value: boolean) {
+		this.$isSlacking.set(value)
+	}
+
+	/**
+	 * Get whether the Bee is currently slacking.
+	 */
+	isSlacking() {
+		return this.$isSlacking.get()
 	}
 
 	/**

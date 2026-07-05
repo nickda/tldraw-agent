@@ -43,6 +43,11 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		() => agent.requests.isGenerating(),
 		[agent]
 	)
+	const isSlacking = useValue(
+		`bee-slacking-${agent.id}`,
+		() => agent.requests.isSlacking(),
+		[agent]
+	)
 	const [motionState, setMotionState] = useState<BeeState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -172,7 +177,13 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	if (!pagePosition) return null
 
 	const plannerPlanning = agent.role === 'planner' && isActive && motionState === 'idle'
-	const state: BeeState = isAnnoyed ? 'annoyed' : plannerPlanning ? 'planning' : motionState
+	const state: BeeState = isSlacking
+		? 'slacking'
+		: isAnnoyed
+			? 'annoyed'
+			: plannerPlanning
+				? 'planning'
+				: motionState
 
 	return (
 		<div
