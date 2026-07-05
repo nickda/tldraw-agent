@@ -3,12 +3,14 @@ import { useEditor, useValue, VecModel } from 'tldraw'
 import { TldrawAgent } from '../agent/TldrawAgent'
 import { useAgents } from '../agent/TldrawAgentAppProvider'
 import { useBeePosition } from '../hooks/useBeePosition'
+import { useLatestBeeMessage } from '../hooks/useBeeSpeech'
 import { BeeState } from '../types/BeeState'
 import { BeeSprite } from './BeeSprite'
 import { BeeReticle } from './BeeReticle'
 
 const BEE_MOVE_DURATION_MS = 400
 const BEE_ANNOYED_DELAY_MS = 2000
+const BEE_SPEECH_DURATION_MS = 6000
 
 export function getBeeSpriteScale(zoomLevel: number) {
 	return zoomLevel > 0 ? 1 / zoomLevel : 1
@@ -48,6 +50,9 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		() => agent.requests.isSlacking(),
 		[agent]
 	)
+	const latestMessage = useLatestBeeMessage(agent)
+	const [visibleSpeech, setVisibleSpeech] = useState<string | null>(null)
+	const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [motionState, setMotionState] = useState<BeeState>('idle')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -153,6 +158,29 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		}, BEE_MOVE_DURATION_MS)
 	}, [pagePosition])
 
+	// Show the latest message as a transient speech bubble, then auto-hide it.
+	// Keyed on the message's history index so re-showing the same text works and
+	// stale timers from a prior message are cleared.
+	useEffect(() => {
+		if (!latestMessage) return
+		setVisibleSpeech(latestMessage.text)
+		if (speechTimeoutRef.current) {
+			clearTimeout(speechTimeoutRef.current)
+		}
+		speechTimeoutRef.current = setTimeout(() => {
+			setVisibleSpeech(null)
+			speechTimeoutRef.current = null
+		}, BEE_SPEECH_DURATION_MS)
+	}, [latestMessage?.index])
+
+	useEffect(() => {
+		return () => {
+			if (speechTimeoutRef.current) {
+				clearTimeout(speechTimeoutRef.current)
+			}
+		}
+	}, [])
+
 	useEffect(() => {
 		window.addEventListener('mouseup', clearPointerInteraction)
 		window.addEventListener('pointerup', clearPointerInteraction)
@@ -221,6 +249,11 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 						position: 'relative',
 					}}
 				>
+					{visibleSpeech && (
+						<div className="bee-speech-bubble" style={{ borderColor: agent.beeColor, color: agent.beeColor }}>
+							<span className="bee-speech-bubble__text">{visibleSpeech}</span>
+						</div>
+					)}
 					<BeeReticle color={agent.beeColor} active={isActive} />
 					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} />
 				</div>

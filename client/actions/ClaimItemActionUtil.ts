@@ -5,7 +5,7 @@ import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
 
 /** The chance, per claim, that WannaBee enters her slacking pause. */
-export const WANNABEE_SLACK_CHANCE = 0.25
+export const WANNABEE_SLACK_CHANCE = 0.6
 
 /** The minimum and maximum real pause duration for WannaBee's slacking state. */
 export const WANNABEE_SLACK_MIN_MS = 2000

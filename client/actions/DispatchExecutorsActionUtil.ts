@@ -1,6 +1,7 @@
 import { DispatchExecutorsAction } from '../../shared/schema/AgentActionSchemas'
 import { Streaming } from '../../shared/types/Streaming'
 import { AgentAppAgentsManager } from '../agent/managers/AgentAppAgentsManager'
+import { executorVoiceInstruction } from '../agent/executorVoice'
 import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
 
@@ -37,7 +38,8 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 						executor.interrupt({
 							input: {
 								agentMessages: [
-									'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+									'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.' +
+										executorVoiceInstruction(executor.beeName),
 								],
 								source: 'other-agent',
 							},
