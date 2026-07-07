@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0.0] - 2026-07-06
+
+### Added
+
+- Team Mode now runs as a fixed hive of three named honeybees: Beeyonce the queen (planner) plus MacBee and WannaBee (executors). Each has its own look and voice instead of a random name on a generic sprite.
+- Bees speak on the canvas: each executor shows a short speech bubble above its sprite when it has something to say. MacBee talks in a broad Scottish voice, WannaBee sounds reluctant and distracted. Bubbles fan outward so two adjacent bees never cover each other, and stay up long enough to read.
+- WannaBee slacks off: after claiming a drawing task she sometimes pauses for a few seconds (striking a pose, phone out) before getting to work. Beeyonce notices and grumbles about it in her own dry voice.
+- New Clear button in the chat panel wipes both the chat history and every shape on the canvas in one go, with a confirmation prompt. The existing "+" still starts a fresh chat without touching the drawing.
+
+### Changed
+
+- The honeybee sprite is a new design: a round striped body with wings and antennae. Beeyonce wears a silver tiara, MacBee's stripes are the blue and white of the Saltire.
+- Bees never emit em dashes in anything they say; dashes are converted to commas automatically.
+
 ## [0.1.0.2] - 2026-07-05
 
 ### Fixed

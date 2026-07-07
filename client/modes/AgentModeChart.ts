@@ -3,6 +3,7 @@ import type { TldrawAgent } from '../agent/TldrawAgent'
 import { AgentAppAgentsManager } from '../agent/managers/AgentAppAgentsManager'
 import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
 import { AgentAppTeamManager } from '../agent/managers/AgentAppTeamManager'
+import { executorVoiceInstruction } from '../agent/executorVoice'
 import type { AgentModeDefinition, AgentModeType } from './AgentModeDefinitions'
 
 /**
@@ -53,7 +54,7 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 					const executors = agents.filter((a) => a.role === 'executor')
 					const idx = executors.indexOf(agent)
 					const spacing = 60
-					agent.requests.setFairyPosition({
+					agent.requests.setBeePosition({
 						x: allBounds.x + (idx + 1) * spacing,
 						y: allBounds.maxY + 40,
 					})
@@ -147,7 +148,8 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 							executor.interrupt({
 								input: {
 									agentMessages: [
-										'You are an Executor Fairy. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.',
+										'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.' +
+											executorVoiceInstruction(executor.beeName),
 									],
 									source: 'other-agent',
 								},

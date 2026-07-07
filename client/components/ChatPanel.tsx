@@ -31,16 +31,18 @@ export function ChatPanel() {
 			if (planner) {
 				const hasExistingShapes = planner.editor.getCurrentPageShapes().length > 0
 				const executors = app.team.getExecutors()
-				const executorNames = executors.map((e) => e.fairyName).join(' and ')
+				const executorNames = executors.map((e) => e.beeName).join(' and ')
 
 				const positioningRule = hasExistingShapes
-					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions — new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
+					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions, new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
 					: `This is a fresh drawing. Place items in disjoint regions so they don't overlap. Use the viewport bounds as a guide for positioning.`
 
 				planner.interrupt({
 					input: {
 						agentMessages: [
-							`You are the Planner Fairy. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns.
+							`You are Beeyonce, the Queen Bee planner. Workers: ${executorNames}. Voice: dry wit, deadpan, child-friendly. No puns. Never use em dashes; use commas or periods instead.
+
+If you narrate MacBee's work, give MacBee a Scottish-inflected, provocative turn of phrase. If WannaBee appears to be pausing or slow to finish her claimed item, react with mild exasperation/grumbling about her slacking, in your own dry voice. Do not invent new mechanics, just narrate it.
 
 You MUST emit these actions in this EXACT order:
 1. message (MAX 2 sentences: what you'll draw + who does what)
@@ -73,10 +75,36 @@ User request: ${value}`,
 		}
 	}, [app])
 
+	const handleClearAll = useCallback(() => {
+		if (!window.confirm('Clear everything? This deletes the chat history and all shapes on the canvas.')) {
+			return
+		}
+		// Wipe the canvas. Agent-drawn shapes are often locked, and
+		// deleteShapes skips locked shapes by default, so delete inside a run
+		// with ignoreShapeLock (the same escape hatch the agent itself uses).
+		const editor = app.editor
+		const shapeIds = editor.getCurrentPageShapeIds()
+		if (shapeIds.size > 0) {
+			editor.run(() => editor.deleteShapes(Array.from(shapeIds)), { ignoreShapeLock: true })
+		}
+		// Reset the shared plan and every agent's chat/state.
+		app.plan.reset()
+		for (const a of app.agents.getAgents()) {
+			a.reset()
+		}
+	}, [app])
+
 	return (
 		<div className="chat-panel tl-theme__dark">
 			<div className="chat-header">
-				<button className="new-chat-button" onClick={handleNewChat}>
+				<button
+					className="clear-all-button"
+					onClick={handleClearAll}
+					title="Clear chat history and canvas"
+				>
+					Clear
+				</button>
+				<button className="new-chat-button" onClick={handleNewChat} title="New chat">
 					+
 				</button>
 			</div>

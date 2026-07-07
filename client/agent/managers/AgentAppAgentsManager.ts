@@ -1,7 +1,7 @@
 import { Editor, EditorAtom, uniqueId } from 'tldraw'
 import { AgentRole, TldrawAgent } from '../TldrawAgent'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
-import { getDefaultFairySpawnPosition } from '../../utils/fairyPosition'
+import { getDefaultBeeSpawnPosition } from '../../utils/beePosition'
 import { generateFairyName } from '../../utils/generateFairyName'
 
 /**
@@ -16,8 +16,8 @@ export function generateAgentId(): string {
  */
 export interface CreateAgentOptions {
 	role?: AgentRole
-	fairyName?: string
-	fairyColor?: string
+	beeName?: string
+	beeColor?: string
 }
 
 /**
@@ -81,7 +81,7 @@ export class AgentAppAgentsManager extends BaseAgentAppManager {
 	 * If an agent with the ID already exists, returns the existing agent.
 	 *
 	 * @param id - The ID for the new agent
-	 * @param options - Optional role, fairy name, and color
+	 * @param options - Optional role, bee name, and color
 	 * @returns The created or existing agent
 	 */
 	createAgent(id: string, options?: CreateAgentOptions): TldrawAgent {
@@ -90,24 +90,24 @@ export class AgentAppAgentsManager extends BaseAgentAppManager {
 			return existingAgent
 		}
 
-		const existingNames = this.getAgents().map((a) => a.fairyName)
-		const fairyName = options?.fairyName ?? generateFairyName(existingNames)
+		const existingNames = this.getAgents().map((a) => a.beeName)
+		const beeName = options?.beeName ?? generateFairyName(existingNames)
 
 		const agent = new TldrawAgent({
 			editor: this.app.editor,
 			id,
 			onError: this.app.options.onError,
 			role: options?.role,
-			fairyName,
-			fairyColor: options?.fairyColor,
+			beeName,
+			beeColor: options?.beeColor,
 		})
 
 		// Register the agent in the static atom
 		AgentAppAgentsManager.$agents.update(this.app.editor, (agents) => [...agents, agent])
 
-		if (!agent.requests.getFairyPosition()) {
-			agent.requests.setFairyPosition(
-				getDefaultFairySpawnPosition(this.app.editor.getViewportPageBounds(), this.getAgents().length - 1)
+		if (!agent.requests.getBeePosition()) {
+			agent.requests.setBeePosition(
+				getDefaultBeeSpawnPosition(this.app.editor.getViewportPageBounds(), this.getAgents().length - 1)
 			)
 		}
 

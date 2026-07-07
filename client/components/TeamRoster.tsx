@@ -27,9 +27,9 @@ function TeamRosterEntry({ agent }: { agent: TldrawAgent }) {
 		>
 			<span
 				className="team-roster__dot"
-				style={{ backgroundColor: agent.fairyColor }}
+				style={{ backgroundColor: agent.beeColor }}
 			/>
-			<span className="team-roster__name">{agent.fairyName}</span>
+			<span className="team-roster__name">{agent.beeName}</span>
 		</div>
 	)
 }

@@ -54,7 +54,7 @@ export function AgentViewportBoundsHighlight({ agent }: { agent: TldrawAgent }) 
 			pageBounds={agentViewportBounds}
 			color="var(--tl-color-tooltip)"
 			generating={true}
-			label={`${agent.fairyName}'s view`}
+			label={`${agent.beeName}'s view`}
 		/>
 	)
 }

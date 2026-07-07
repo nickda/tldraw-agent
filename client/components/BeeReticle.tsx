@@ -2,10 +2,10 @@ const RETICLE_SIZE = 48
 const CORNER_LEN = 10
 const GAP = 4
 
-export function FairyReticle({ color, active }: { color: string; active: boolean }) {
+export function BeeReticle({ color, active }: { color: string; active: boolean }) {
 	return (
 		<div
-			className="fairy-reticle"
+			className="bee-reticle"
 			style={{
 				position: 'absolute',
 				left: '50%',
