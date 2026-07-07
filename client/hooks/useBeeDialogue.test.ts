@@ -155,4 +155,37 @@ describe('aggregateBeeDialogue', () => {
 	test('empty agent list produces an empty result', () => {
 		expect(aggregateBeeDialogue([], new Map(), new Map(), () => 1)).toEqual([])
 	})
+
+	test('demonstrates why the cache maps must persist: fresh maps on every call re-stamp and reorder', () => {
+		const snapshots = [
+			snapshot('planner', 'Beeyonce', '#6366f1', [{ text: 'first', complete: true }]),
+			snapshot('exec0', 'MacBee', '#f59e0b', [{ text: 'second', complete: true }]),
+		]
+
+		// Correct usage: same maps reused across calls preserve true order.
+		const persistentCache = new Map<string, number>()
+		const persistentLengths = new Map<string, number>()
+		let now = 1000
+		aggregateBeeDialogue(
+			[snapshot('planner', 'Beeyonce', '#6366f1', [{ text: 'first', complete: true }])],
+			persistentCache,
+			persistentLengths,
+			() => now
+		)
+		now = 2000
+		const persistentResult = aggregateBeeDialogue(snapshots, persistentCache, persistentLengths, () => now)
+		expect(persistentResult.map((l) => l.text)).toEqual(['first', 'second'])
+
+		// Buggy usage: fresh empty maps every call (simulating a remounted hook)
+		// re-stamp every message with the current clock, losing true order.
+		now = 9000
+		const freshResult = aggregateBeeDialogue(snapshots, new Map(), new Map(), () => now)
+		expect(freshResult).toHaveLength(2)
+		expect(freshResult[0].timestamp).toBe(9000)
+		expect(freshResult[1].timestamp).toBe(9000)
+		// With identical timestamps, Array.prototype.sort is not guaranteed to
+		// reorder, but the point stands: both messages now claim the SAME
+		// observation time instead of their original 1000/2000, which is the
+		// data corruption a persisted cache prevents.
+	})
 })

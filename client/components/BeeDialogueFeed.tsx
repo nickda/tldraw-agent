@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { BeeDialogueLine, useBeeDialogue } from '../hooks/useBeeDialogue'
-import { useAgents } from '../agent/TldrawAgentAppProvider'
+import { BeeDialogueLine } from '../hooks/useBeeDialogue'
 
 /**
  * Renders one dialogue line: a colored attribution dot + bee name header,
@@ -25,9 +24,7 @@ export function renderBeeDialogueLine(line: BeeDialogueLine) {
 	)
 }
 
-export function BeeDialogueFeed() {
-	const agents = useAgents()
-	const lines = useBeeDialogue(agents)
+export function BeeDialogueFeed({ lines }: { lines: BeeDialogueLine[] }) {
 	const feedRef = useRef<HTMLDivElement>(null)
 	const previousScrollDistanceFromBottomRef = useRef(0)
 

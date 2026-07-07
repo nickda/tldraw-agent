@@ -1,15 +1,18 @@
 import { FormEventHandler, useCallback, useRef, useState } from 'react'
-import { useAgent, useTldrawAgentApp } from '../agent/TldrawAgentAppProvider'
+import { useAgent, useAgents, useTldrawAgentApp } from '../agent/TldrawAgentAppProvider'
 import { BeeDialogueFeed } from './BeeDialogueFeed'
 import { ChatHistory } from './chat-history/ChatHistory'
 import { ChatInput } from './ChatInput'
 import { TodoList } from './TodoList'
+import { useBeeDialogue } from '../hooks/useBeeDialogue'
 
 type ChatPanelTab = 'dialogue' | 'log'
 
 export function ChatPanel() {
 	const app = useTldrawAgentApp()
 	const agent = useAgent()
+	const agents = useAgents()
+	const dialogueLines = useBeeDialogue(agents)
 	const inputRef = useRef<HTMLTextAreaElement>(null)
 	const [tab, setTab] = useState<ChatPanelTab>('dialogue')
 
@@ -128,7 +131,7 @@ User request: ${value}`,
 					</button>
 				</div>
 			</div>
-			{tab === 'dialogue' ? <BeeDialogueFeed /> : <ChatHistory agent={agent} />}
+			{tab === 'dialogue' ? <BeeDialogueFeed lines={dialogueLines} /> : <ChatHistory agent={agent} />}
 			<div className="chat-input-container">
 				<TodoList agent={agent} />
 				<ChatInput handleSubmit={handleSubmit} inputRef={inputRef} />
