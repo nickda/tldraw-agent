@@ -215,7 +215,6 @@ export const AGENT_MODE_DEFINITIONS = [
 			WritePlanActionUtil.type,
 			DispatchExecutorsActionUtil.type,
 			DelegateFixActionUtil.type,
-			ReviewActionUtil.type,
 			SetMyViewActionUtil.type,
 
 			// Internal (required)

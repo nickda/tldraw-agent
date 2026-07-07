@@ -22,26 +22,29 @@ export const DelegateFixActionUtil = registerActionUtil(
 
 			const bounds = { x: action.x, y: action.y, w: action.w, h: action.h }
 
+			const agents = AgentAppAgentsManager.getAgents(this.editor)
+			const executors = agents.filter((a) => a.role === 'executor')
+
+			// Prefer the specified executor, fall back to first idle one. The
+			// Planner sometimes supplies a bee name instead of an agent id, so
+			// this resolved executor (not action.agentId) is the source of
+			// truth for the assignee stamped on the fix item below.
+			let executor = executors.find((e) => e.id === action.agentId)
+			if (!executor || executor.requests.isGenerating()) {
+				executor = executors.find((e) => !e.requests.isGenerating()) ?? executors[0]
+			}
+
 			const plan = AgentAppPlanManager.getPlan(this.editor)
 			const nextId = (plan.length + 1) as TodoItem['id']
 			const fixItem: TodoItem = {
 				id: nextId,
 				text: action.text,
 				status: 'in-progress' as const,
-				assignee: action.agentId,
+				assignee: executor?.id,
 				bounds,
 			}
 
 			AgentAppPlanManager.$plan.set(this.editor, [...plan, fixItem])
-
-			const agents = AgentAppAgentsManager.getAgents(this.editor)
-			const executors = agents.filter((a) => a.role === 'executor')
-
-			// Prefer the specified executor, fall back to first idle one
-			let executor = executors.find((e) => e.id === action.agentId)
-			if (!executor || executor.requests.isGenerating()) {
-				executor = executors.find((e) => !e.requests.isGenerating()) ?? executors[0]
-			}
 
 			if (executor) {
 				executor.interrupt({

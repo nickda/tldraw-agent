@@ -178,43 +178,37 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			agent.lints.unlockCreatedShapes()
 		},
 		onPromptEnd(agent) {
-			// Only mark the item done if shapes were actually created
-			// (meaning real drawing happened, not just a claim action).
-			const createdShapes = agent.lints.getCreatedShapes()
-			if (createdShapes.length > 0) {
-				const plan = AgentAppPlanManager.getPlan(agent.editor)
-				const myInProgress = plan.findIndex(
-					(item) => item.status === 'in-progress' && item.assignee === agent.id
-				)
-				if (myInProgress !== -1) {
-					const updated = plan.slice()
-					updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
-					AgentAppPlanManager.$plan.set(agent.editor, updated)
-				}
+			// A scheduled follow-up (e.g. claimItem's own draw prompt) means more
+			// work is already queued for this turn — let it run and decide
+			// completion when that follow-up itself ends. Gating on "shapes were
+			// created" instead of this used to leave move/delete/pen-only fixes
+			// (e.g. from delegateFix) permanently in-progress, since no shapes
+			// meant the item was never marked done and the review loop never
+			// re-checked.
+			if (agent.requests.getScheduledRequest()) return
 
-				// Try to claim the next item.
-				const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
-				const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
+			const plan = AgentAppPlanManager.getPlan(agent.editor)
+			const myInProgress = plan.findIndex(
+				(item) => item.status === 'in-progress' && item.assignee === agent.id
+			)
+			if (myInProgress !== -1) {
+				const updated = plan.slice()
+				updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
+				AgentAppPlanManager.$plan.set(agent.editor, updated)
+			}
 
-				if (hasUnclaimed) {
-					agent.schedule({
-						agentMessages: [
-							'Claim the next available plan item and draw it.',
-						],
-						source: 'self',
-					})
-				} else {
-					agent.mode.setMode('idling')
-					AgentAppTeamManager.triggerReviewCheck()
-				}
+			// Try to claim the next item.
+			const currentPlan = AgentAppPlanManager.getPlan(agent.editor)
+			const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
+
+			if (hasUnclaimed) {
+				agent.schedule({
+					agentMessages: ['Claim the next available plan item and draw it.'],
+					source: 'self',
+				})
 			} else {
-				// No shapes created (e.g., only claimed). The claimItem action
-				// already scheduled a draw prompt, so we do nothing here and let
-				// the scheduled request proceed. If nothing is scheduled (edge
-				// case), go idle to avoid the "active mode" assertion.
-				if (!agent.requests.getScheduledRequest()) {
-					agent.mode.setMode('idling')
-				}
+				agent.mode.setMode('idling')
+				AgentAppTeamManager.triggerReviewCheck()
 			}
 		},
 		onPromptCancel(agent) {
