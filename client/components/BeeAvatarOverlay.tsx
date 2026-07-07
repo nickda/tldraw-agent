@@ -162,11 +162,17 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	// Keyed on the message's history index so re-showing the same text works and
 	// stale timers from a prior message are cleared.
 	useEffect(() => {
-		if (!latestMessage) return
-		setVisibleSpeech(latestMessage.text)
 		if (speechTimeoutRef.current) {
 			clearTimeout(speechTimeoutRef.current)
+			speechTimeoutRef.current = null
 		}
+		if (!latestMessage) {
+			// Chat history was reset (Clear/New chat): drop any bubble still
+			// showing instead of leaving stale text up until its timer fires.
+			setVisibleSpeech(null)
+			return
+		}
+		setVisibleSpeech(latestMessage.text)
 		speechTimeoutRef.current = setTimeout(() => {
 			setVisibleSpeech(null)
 			speechTimeoutRef.current = null
