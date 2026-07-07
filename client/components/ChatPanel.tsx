@@ -1,13 +1,17 @@
-import { FormEventHandler, useCallback, useRef } from 'react'
+import { FormEventHandler, useCallback, useRef, useState } from 'react'
 import { useAgent, useTldrawAgentApp } from '../agent/TldrawAgentAppProvider'
+import { BeeDialogueFeed } from './BeeDialogueFeed'
 import { ChatHistory } from './chat-history/ChatHistory'
 import { ChatInput } from './ChatInput'
 import { TodoList } from './TodoList'
+
+type ChatPanelTab = 'dialogue' | 'log'
 
 export function ChatPanel() {
 	const app = useTldrawAgentApp()
 	const agent = useAgent()
 	const inputRef = useRef<HTMLTextAreaElement>(null)
+	const [tab, setTab] = useState<ChatPanelTab>('dialogue')
 
 	const handleSubmit = useCallback<FormEventHandler<HTMLFormElement>>(
 		async (e) => {
@@ -97,18 +101,34 @@ User request: ${value}`,
 	return (
 		<div className="chat-panel tl-theme__dark">
 			<div className="chat-header">
-				<button
-					className="clear-all-button"
-					onClick={handleClearAll}
-					title="Clear chat history and canvas"
-				>
-					Clear
-				</button>
-				<button className="new-chat-button" onClick={handleNewChat} title="New chat">
-					+
-				</button>
+				<div className="chat-header__tabs">
+					<button
+						className={`chat-header__tab${tab === 'dialogue' ? ' chat-header__tab--active' : ''}`}
+						onClick={() => setTab('dialogue')}
+					>
+						Dialogue
+					</button>
+					<button
+						className={`chat-header__tab${tab === 'log' ? ' chat-header__tab--active' : ''}`}
+						onClick={() => setTab('log')}
+					>
+						Log
+					</button>
+				</div>
+				<div className="chat-header__actions">
+					<button
+						className="clear-all-button"
+						onClick={handleClearAll}
+						title="Clear chat history and canvas"
+					>
+						Clear
+					</button>
+					<button className="new-chat-button" onClick={handleNewChat} title="New chat">
+						+
+					</button>
+				</div>
 			</div>
-			<ChatHistory agent={agent} />
+			{tab === 'dialogue' ? <BeeDialogueFeed /> : <ChatHistory agent={agent} />}
 			<div className="chat-input-container">
 				<TodoList agent={agent} />
 				<ChatInput handleSubmit={handleSubmit} inputRef={inputRef} />
