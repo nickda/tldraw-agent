@@ -12,6 +12,9 @@ export interface BeeDialogueLine {
 	timestamp: number
 }
 
+/** Neutral attribution color for the user's own prompts in the feed, distinct from any bee's color. */
+const USER_LINE_COLOR = '#9ca3af'
+
 /**
  * A read-only snapshot of one agent's identity and chat history, decoupled
  * from the live `TldrawAgent` class so the aggregation logic can be unit
@@ -64,13 +67,33 @@ export function aggregateBeeDialogue(
 
 		for (let i = 0; i < snapshot.history.length; i++) {
 			const item = snapshot.history[i]
+
+			let text: string | null = null
+			let beeName = snapshot.beeName
+			let beeColor = snapshot.beeColor
+
 			if (
-				item.type !== 'action' ||
-				item.action._type !== 'message' ||
-				!item.action.complete ||
-				typeof item.action.text !== 'string' ||
-				item.action.text.trim().length === 0
+				item.type === 'action' &&
+				item.action._type === 'message' &&
+				item.action.complete &&
+				typeof item.action.text === 'string' &&
+				item.action.text.trim().length > 0
 			) {
+				text = item.action.text
+			} else if (item.type === 'prompt' && item.promptSource === 'user') {
+				// Only the user's own typed prompts appear in the feed. Internal
+				// 'self'/'other-agent' prompts (e.g. the planner nudging an
+				// executor, or a review-loop retry) are plumbing, not something
+				// the user said, and stay excluded.
+				const promptText = item.userFacingMessage ?? item.agentFacingMessage
+				if (typeof promptText === 'string' && promptText.trim().length > 0) {
+					text = promptText
+					beeName = 'You'
+					beeColor = USER_LINE_COLOR
+				}
+			}
+
+			if (text === null) {
 				continue
 			}
 
@@ -84,9 +107,9 @@ export function aggregateBeeDialogue(
 			lines.push({
 				key,
 				agentId: snapshot.agentId,
-				beeName: snapshot.beeName,
-				beeColor: snapshot.beeColor,
-				text: item.action.text,
+				beeName,
+				beeColor,
+				text,
 				timestamp,
 			})
 		}

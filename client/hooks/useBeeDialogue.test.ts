@@ -1,26 +1,47 @@
 import { describe, expect, test } from 'bun:test'
 import { aggregateBeeDialogue, type AgentSnapshot } from './useBeeDialogue'
 
+type MessageSpec = { text: string; complete: boolean }
+type PromptSpec = { prompt: string; source?: 'user' | 'self' | 'other-agent' }
+
 function snapshot(
 	agentId: string,
 	beeName: string,
 	beeColor: string,
-	messages: Array<{ text: string; complete: boolean } | null>
+	messages: Array<MessageSpec | PromptSpec | null>
 ): AgentSnapshot {
 	return {
 		agentId,
 		beeName,
 		beeColor,
-		history: messages.map((m) =>
-			m === null
-				? { type: 'prompt', promptSource: 'user', agentFacingMessage: '', userFacingMessage: null, contextItems: [], selectedShapes: [] }
-				: {
-						type: 'action',
-						action: { _type: 'message', text: m.text, complete: m.complete, time: 0 },
-						diff: { added: {}, updated: {}, removed: {} },
-						acceptance: 'accepted',
-					}
-		),
+		history: messages.map((m) => {
+			if (m === null) {
+				return {
+					type: 'prompt',
+					promptSource: 'user',
+					agentFacingMessage: '',
+					userFacingMessage: null,
+					contextItems: [],
+					selectedShapes: [],
+				}
+			}
+			if ('prompt' in m) {
+				return {
+					type: 'prompt',
+					promptSource: m.source ?? 'user',
+					agentFacingMessage: m.prompt,
+					userFacingMessage: m.prompt,
+					contextItems: [],
+					selectedShapes: [],
+				}
+			}
+			return {
+				type: 'action',
+				action: { _type: 'message', text: m.text, complete: m.complete, time: 0 },
+				diff: { added: {}, updated: {}, removed: {} },
+				acceptance: 'accepted',
+			}
+		}),
 	}
 }
 
@@ -154,6 +175,76 @@ describe('aggregateBeeDialogue', () => {
 
 	test('empty agent list produces an empty result', () => {
 		expect(aggregateBeeDialogue([], new Map(), new Map(), () => 1)).toEqual([])
+	})
+
+	test('includes a user-sourced prompt as a "You" line', () => {
+		const snapshots = [
+			snapshot('planner', 'Beeyonce', '#6366f1', [
+				{ prompt: 'draw a house', source: 'user' },
+				{ text: 'Drawing a house.', complete: true },
+			]),
+		]
+		const lines = aggregateBeeDialogue(snapshots, new Map(), new Map(), () => 1000)
+
+		expect(lines).toHaveLength(2)
+		expect(lines[0]).toMatchObject({
+			key: 'planner:0',
+			agentId: 'planner',
+			beeName: 'You',
+			text: 'draw a house',
+		})
+		expect(lines[1]).toMatchObject({ beeName: 'Beeyonce', text: 'Drawing a house.' })
+	})
+
+	test('excludes self- and other-agent-sourced prompts (internal bee-to-bee nudges)', () => {
+		const snapshots = [
+			snapshot('planner', 'Beeyonce', '#6366f1', [
+				{ prompt: 'draw a house', source: 'user' },
+				{ prompt: 'All plan items are done, review now.', source: 'self' },
+				{ prompt: 'Claim the next item.', source: 'other-agent' },
+				{ text: 'Reviewing the house.', complete: true },
+			]),
+		]
+		const lines = aggregateBeeDialogue(snapshots, new Map(), new Map(), () => 1000)
+
+		expect(lines.map((l) => l.text)).toEqual(['draw a house', 'Reviewing the house.'])
+	})
+
+	test('falls back to agentFacingMessage when userFacingMessage is null', () => {
+		const history: AgentSnapshot['history'] = [
+			{
+				type: 'prompt',
+				promptSource: 'user',
+				agentFacingMessage: 'internal phrasing of the request',
+				userFacingMessage: null,
+				contextItems: [],
+				selectedShapes: [],
+			},
+		]
+		const lines = aggregateBeeDialogue(
+			[{ agentId: 'planner', beeName: 'Beeyonce', beeColor: '#6366f1', history }],
+			new Map(),
+			new Map(),
+			() => 1000
+		)
+
+		expect(lines).toHaveLength(1)
+		expect(lines[0].text).toBe('internal phrasing of the request')
+	})
+
+	test('skips a user prompt with an empty message', () => {
+		const snapshots = [snapshot('planner', 'Beeyonce', '#6366f1', [{ prompt: '', source: 'user' }])]
+		expect(aggregateBeeDialogue(snapshots, new Map(), new Map(), () => 1000)).toEqual([])
+	})
+
+	test('user prompt lines use a neutral beeColor, not the speaking agent\'s color', () => {
+		const snapshots = [
+			snapshot('exec0', 'MacBee', '#f59e0b', [{ prompt: 'draw a tree', source: 'user' }]),
+		]
+		const lines = aggregateBeeDialogue(snapshots, new Map(), new Map(), () => 1000)
+
+		expect(lines[0].beeName).toBe('You')
+		expect(lines[0].beeColor).not.toBe('#f59e0b')
 	})
 
 	test('demonstrates why the cache maps must persist: fresh maps on every call re-stamp and reorder', () => {
