@@ -213,14 +213,20 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	// The two executors draw in adjacent regions and end up ~60px apart, so
 	// their centered speech bubbles overlap. Fan them outward by name: MacBee
 	// (always the left executor) grows its bubble left, WannaBee (always right)
-	// grows right, so the bubbles can never cover each other. Everyone else
-	// (the centered planner, solo mode) keeps the default centered bubble.
+	// grows right, so the bubbles can never cover each other.
+	// The planner (Beeyonce) has no fixed side, she moves around the canvas
+	// and can end up next to either executor, so instead her bubble stacks
+	// higher, clearing the executors' bubble row entirely regardless of which
+	// one she's near. Solo mode (no role-based bees) keeps the default
+	// centered bubble.
 	const speechSideClass =
-		beeName === 'MacBee'
-			? ' bee-speech-bubble--left'
-			: beeName === 'WannaBee'
-				? ' bee-speech-bubble--right'
-				: ''
+		agent.role === 'planner'
+			? ' bee-speech-bubble--planner'
+			: beeName === 'MacBee'
+				? ' bee-speech-bubble--left'
+				: beeName === 'WannaBee'
+					? ' bee-speech-bubble--right'
+					: ''
 
 	const plannerPlanning = agent.role === 'planner' && isActive && motionState === 'idle'
 	const state: BeeState = isSlacking

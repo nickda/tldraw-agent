@@ -126,6 +126,17 @@ body {
 	transform: none;
 }
 
+/*
+ * Beeyonce (the planner) has no fixed side, she moves around the canvas
+ * during planning/review and can end up next to either executor, so a
+ * horizontal fan (like --left/--right above) can't guarantee no overlap.
+ * Instead her bubble stacks higher above her sprite, clearing the row the
+ * executors' bubbles occupy regardless of which one she's near.
+ */
+.bee-speech-bubble--planner {
+	bottom: calc(100% + 60px);
+}
+
 @keyframes bee-speech-pop-flip {
 	from {
 		opacity: 0;
