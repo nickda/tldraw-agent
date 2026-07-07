@@ -126,6 +126,17 @@ body {
 	transform: none;
 }
 
+/*
+ * Beeyonce (the planner) has no fixed side, she moves around the canvas
+ * during planning/review and can end up next to either executor, so a
+ * horizontal fan (like --left/--right above) can't guarantee no overlap.
+ * Instead her bubble stacks higher above her sprite, clearing the row the
+ * executors' bubbles occupy regardless of which one she's near.
+ */
+.bee-speech-bubble--planner {
+	bottom: calc(100% + 60px);
+}
+
 @keyframes bee-speech-pop-flip {
 	from {
 		opacity: 0;
@@ -281,9 +292,100 @@ body {
 
 .chat-header {
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-between;
 	align-items: center;
 	gap: 4px;
+	padding: 0 4px;
+}
+
+.chat-header__tabs {
+	display: flex;
+	gap: 2px;
+}
+
+.chat-header__actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.chat-header__tab {
+	height: 32px;
+	padding: 0 12px;
+	font-size: 13px;
+	font-weight: 500;
+	appearance: none;
+	border: 0;
+	border-radius: 4px;
+	cursor: pointer;
+	background: none;
+	color: var(--tl-color-text-2);
+}
+
+.chat-header__tab:hover {
+	background-color: var(--tl-color-muted-2);
+	color: var(--tl-color-text);
+}
+
+.chat-header__tab--active {
+	background-color: var(--tl-color-muted-1);
+	color: var(--tl-color-text);
+}
+
+.bee-dialogue-feed {
+	padding: 0px 16px 32px 16px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	height: 100%;
+	position: relative;
+	width: 100%;
+	scrollbar-width: 8px;
+	scrollbar-color: var(--tl-color-muted-1) transparent;
+}
+
+.bee-dialogue-feed::-webkit-scrollbar {
+	width: 8px;
+}
+
+.bee-dialogue-feed::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.bee-dialogue-feed::-webkit-scrollbar-thumb {
+	background: var(--tl-color-muted-1);
+	border-radius: 4px;
+}
+
+.bee-dialogue-line {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.bee-dialogue-line__attribution {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.bee-dialogue-line__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.bee-dialogue-line__name {
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.bee-dialogue-line__text {
+	font-size: 16px;
+	line-height: 1.4;
+	color: var(--tl-color-text-1);
 }
 
 .clear-all-button {
