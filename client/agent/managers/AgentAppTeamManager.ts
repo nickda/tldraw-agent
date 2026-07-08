@@ -9,6 +9,9 @@ import { pickSlackGrumble } from '../executorVoice'
 const PLANNER_COLOR = '#6366f1'
 const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
 
+/** How long the Planner pauses at each drawn item during the pre-review flythrough. */
+const REVIEW_TOUR_STOP_MS = 600
+
 /** The Planner's fixed name in Team Mode. Team Mode always has exactly one planner. */
 export const PLANNER_BEE_NAME = 'Beeyonce'
 
@@ -215,7 +218,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					y: item.bounds.y + item.bounds.h / 2,
 				}
 				this.planner.requests.setBeePosition(pos)
-				await new Promise((resolve) => setTimeout(resolve, 1500))
+				await new Promise((resolve) => setTimeout(resolve, REVIEW_TOUR_STOP_MS))
 			}
 		}
 	}
