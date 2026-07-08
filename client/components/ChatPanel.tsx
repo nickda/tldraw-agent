@@ -56,6 +56,8 @@ You MUST emit these actions in this EXACT order:
 2. writePlan (the actual plan items with coordinates)
 3. dispatchExecutors
 
+Do not use the think action for this. Go straight to message, then writePlan, then dispatchExecutors. Reasoning through the plan out loud in a think action burns your turn and can leave writePlan and dispatchExecutors unsent.
+
 The message action MUST be short. Put ALL detail into writePlan items, not the message.
 
 Each writePlan item needs: text (what to draw), x, y, w, h (canvas region).

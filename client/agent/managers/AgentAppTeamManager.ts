@@ -189,11 +189,20 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 							source: 'self',
 						},
 					})
-				} else {
+				} else if (reviewRound === 0) {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
 								'All plan items are done. First, send a message (in your dry witty voice) describing what you see. Then critically review. Check: overlapping/occlusion (are objects covering faces or important parts? Use sendToBack/bringToFront to fix z-order), alignment, proportions, disconnected elements. Your bar for "needs fixing" should be LOW. Use delegateFix for EVERY issue. Only say complete if genuinely nothing to improve.',
+							],
+							source: 'self',
+						},
+					})
+				} else {
+					this.planner?.interrupt({
+						input: {
+							agentMessages: [
+								'You already reviewed this scene once. Do not re-describe or re-check areas you already passed. Verify only the fixes you just delegated and anything they touched: did each fix land correctly, and did it introduce a new overlap, alignment, or proportion issue nearby? Do not use the think action here; go straight to delegateFix for anything still wrong. Only send a message if there is something new to flag or you are genuinely done; a short "looks good" is fine.',
 							],
 							source: 'self',
 						},
