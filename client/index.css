@@ -171,15 +171,19 @@ body {
 	transform-origin: center center;
 }
 
-.bee-sprite--idle .bee-sprite__figure {
+.bee-sprite--idle .bee-sprite__figure,
+.bee-sprite--planning .bee-sprite__figure {
 	animation: bee-bob 1.5s ease-in-out infinite;
+	animation-delay: var(--bee-anim-delay, 0ms);
 }
 
 .bee-sprite--idle .bee-sprite__wing,
+.bee-sprite--planning .bee-sprite__wing,
 .bee-sprite--drawing .bee-sprite__wing {
 	transform-box: fill-box;
 	transform-origin: center center;
 	animation: bee-wing-flutter 180ms ease-in-out infinite alternate;
+	animation-delay: var(--bee-anim-delay, 0ms);
 }
 
 .bee-sprite--drawing .bee-sprite__svg {

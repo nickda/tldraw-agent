@@ -1,4 +1,21 @@
+import type { CSSProperties } from 'react'
 import { BeeState } from '../types/BeeState'
+
+/**
+ * Deterministic per-bee offset so idle/planning bob and wing-flutter don't
+ * run in lockstep across all three bees. Negative delays start each bee
+ * partway through its cycle immediately on mount, avoiding a visible
+ * catch-up pause. Any bee name not listed here defaults to 0ms.
+ */
+const BEE_ANIMATION_DELAY_MS: Record<string, number> = {
+	Beeyonce: 0,
+	MacBee: -300,
+	WannaBee: -600,
+}
+
+export function getBeeAnimationDelayMs(beeName: string): number {
+	return BEE_ANIMATION_DELAY_MS[beeName] ?? 0
+}
 
 export function BeeSprite({
 	beeName,
@@ -19,7 +36,12 @@ export function BeeSprite({
 		<div
 			className={rootClassName}
 			data-bee-state={state}
-			style={{ pointerEvents: 'none' }}
+			style={
+				{
+					pointerEvents: 'none',
+					'--bee-anim-delay': `${getBeeAnimationDelayMs(beeName)}ms`,
+				} as CSSProperties
+			}
 		>
 			<div className="bee-sprite__figure" style={{ pointerEvents: 'auto' }}>
 				<svg
