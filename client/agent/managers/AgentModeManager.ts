@@ -48,9 +48,11 @@ export class AgentModeManager extends BaseAgentManager {
 	setMode(newMode: AgentModeType) {
 		const fromMode = this.getCurrentModeType()
 
-		// TODO see if this is needed, or if it should just be a return, or if we can remove it entirely
+		// Transitioning to the mode the agent is already in is a no-op. Several
+		// lifecycle hooks call this unconditionally on cancel/end paths (e.g.
+		// "go idle"), so this must not throw for a benign already-idle case.
 		if (fromMode === newMode) {
-			throw new Error(`Agent is already in mode: ${newMode}`)
+			return
 		}
 
 		const fromModeNode = this.getCurrentModeNode()

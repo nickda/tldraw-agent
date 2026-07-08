@@ -47,6 +47,13 @@ export type AgentRole = 'planner' | 'executor' | 'solo'
 export const DEFAULT_BEE_COLOR = '#111'
 
 /**
+ * Safety cap on the post-prompt mode-transition loop in `prompt()`. Bounds
+ * the case where two modes' `onPromptEnd` hooks transition into each other,
+ * which would otherwise loop forever.
+ */
+export const MAX_MODE_TRANSITIONS_PER_PROMPT = 20
+
+/**
  * The persisted state of an agent.
  * Used for saving and loading agent state.
  */
@@ -372,58 +379,70 @@ export class TldrawAgent {
 
 		this.requests.setIsPrompting(true)
 
-		const request = this.requests.getFullRequestFromInput(input)
-		const startingNode = this.mode.getCurrentModeNode()
-		startingNode.onPromptStart?.(this, request)
-
-		// Submit the request to the agent.
+		// Everything below can throw (mode-start hook, the post-completion mode
+		// transition loop, the inactive-mode guard, or the recursive continuation
+		// call). The finally block guarantees isPrompting/cancelFn are cleared on
+		// every exit path, so a thrown error can't leave the agent stuck
+		// "generating" forever.
 		try {
-			await this.request(request)
-		} catch (e) {
-			console.error('Error data:', e)
+			const request = this.requests.getFullRequestFromInput(input)
+			const startingNode = this.mode.getCurrentModeNode()
+			startingNode.onPromptStart?.(this, request)
+
+			// Submit the request to the agent.
+			try {
+				await this.request(request)
+			} catch (e) {
+				console.error('Error data:', e)
+				return
+			}
+
+			let modeChanged = true
+			let transitionCount = 0
+			while (!this.requests.getScheduledRequest() && modeChanged) {
+				if (++transitionCount > MAX_MODE_TRANSITIONS_PER_PROMPT) {
+					throw new Error(
+						`Agent mode-transition loop exceeded ${MAX_MODE_TRANSITIONS_PER_PROMPT} iterations. Modes may be transitioning into each other.`
+					)
+				}
+				modeChanged = false
+				const currentModeType = this.mode.getCurrentModeType()
+				const currentModeNode = this.mode.getCurrentModeNode()
+				currentModeNode.onPromptEnd?.(this, request) // in case onPromptEnd switches modes
+				const newModeType = this.mode.getCurrentModeType()
+				if (newModeType !== currentModeType) {
+					modeChanged = true
+				}
+			}
+
+			// If there's still no scheduled request, quit
+			const scheduledRequest = this.requests.getScheduledRequest()
+			const eventualModeType = this.mode.getCurrentModeType()
+			const eventualModeDefinition = this.mode.getCurrentModeDefinition()
+			if (!scheduledRequest) {
+				if (eventualModeDefinition.active) {
+					throw new Error(
+						`Agent is not allowed to become inactive during the active mode: ${eventualModeType}`
+					)
+				}
+				return
+			}
+
+			// If there *is* a scheduled request...
+			// Add the scheduled request to chat history
+			const resolvedData = await Promise.all(scheduledRequest.data)
+			this.chat.push({
+				type: 'continuation',
+				data: resolvedData,
+			})
+
+			// Handle the scheduled request and clear it
+			this.requests.clearScheduledRequest()
+			await this.prompt(scheduledRequest, { nested: true })
+		} finally {
 			this.requests.setIsPrompting(false)
 			this.requests.setCancelFn(null)
-			return
 		}
-
-		let modeChanged = true
-		while (!this.requests.getScheduledRequest() && modeChanged) {
-			modeChanged = false
-			const currentModeType = this.mode.getCurrentModeType()
-			const currentModeNode = this.mode.getCurrentModeNode()
-			currentModeNode.onPromptEnd?.(this, request) // in case onPromptEnd switches modes
-			const newModeType = this.mode.getCurrentModeType()
-			if (newModeType !== currentModeType) {
-				modeChanged = true
-			}
-		}
-
-		// If there's still no scheduled request, quit
-		const scheduledRequest = this.requests.getScheduledRequest()
-		const eventualModeType = this.mode.getCurrentModeType()
-		const eventualModeDefinition = this.mode.getCurrentModeDefinition()
-		if (!scheduledRequest) {
-			if (eventualModeDefinition.active) {
-				throw new Error(
-					`Agent is not allowed to become inactive during the active mode: ${eventualModeType}`
-				)
-			}
-			this.requests.setIsPrompting(false)
-			this.requests.setCancelFn(null)
-			return
-		}
-
-		// If there *is* a scheduled request...
-		// Add the scheduled request to chat history
-		const resolvedData = await Promise.all(scheduledRequest.data)
-		this.chat.push({
-			type: 'continuation',
-			data: resolvedData,
-		})
-
-		// Handle the scheduled request and clear it
-		this.requests.clearScheduledRequest()
-		await this.prompt(scheduledRequest, { nested: true })
 	}
 
 	/**
@@ -449,15 +468,20 @@ export class TldrawAgent {
 		}
 		this.requests.setActiveRequest(request)
 
-		// Call an external helper function to request the agent
-		const { promise, cancel } = this.requestAgentActions(request)
+		try {
+			// Call an external helper function to request the agent
+			const { promise, cancel } = this.requestAgentActions(request)
 
-		this.requests.setCancelFn(cancel)
+			this.requests.setCancelFn(cancel)
 
-		const results = await promise
-		this.requests.clearActiveRequest()
+			const results = await promise
+			this.requests.clearActiveRequest()
 
-		return results
+			return results
+		} catch (e) {
+			this.requests.clearActiveRequest()
+			throw e
+		}
 	}
 
 	/**
