@@ -108,6 +108,7 @@ export class AgentService {
 	}
 
 	private async *streamActions(prompt: AgentPrompt): AsyncGenerator<Streaming<AgentAction>> {
+		const requestStartTime = Date.now()
 		const modelName = getModelName(prompt)
 		let model = this.getModel(modelName)
 
@@ -178,7 +179,8 @@ export class AgentService {
 					streamError = e
 				},
 				onFinish: ({ finishReason, usage }) => {
-					console.log(`[STREAM] finished: reason=${finishReason} tokens=${usage?.totalTokens ?? '?'} (in=${usage?.inputTokens ?? '?'} out=${usage?.outputTokens ?? '?'})`)
+					const elapsedMs = Date.now() - requestStartTime
+					console.log(`[STREAM] finished: reason=${finishReason} tokens=${usage?.totalTokens ?? '?'} (in=${usage?.inputTokens ?? '?'} out=${usage?.outputTokens ?? '?'}) elapsedMs=${elapsedMs}`)
 				},
 			})
 			const { textStream } = result
