@@ -178,8 +178,6 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				this.reviewGuard = true
 				this.app.plan.incrementReviewRound()
 
-				await this.animateReviewTour()
-
 				if (reviewRound + 1 >= MAX_REVIEW_ROUNDS) {
 					this.planner?.interrupt({
 						input: {
@@ -209,6 +207,12 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					})
 				}
 
+				// Keep her walking the done items for as long as she's actually
+				// generating the review, instead of finishing a fixed tour before
+				// the call even starts and then sitting frozen through the (often
+				// much longer) generation itself.
+				this.animateReviewTourWhileGenerating()
+
 				setTimeout(() => {
 					this.reviewGuard = false
 				}, 100)
@@ -216,19 +220,29 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		}, 50)
 	}
 
-	private async animateReviewTour(): Promise<void> {
-		if (!this.planner) return
-		const plan = AgentAppPlanManager.getPlan(this.app.editor)
+	private async animateReviewTourWhileGenerating(): Promise<void> {
+		const planner = this.planner
+		if (!planner) return
 
-		for (const item of plan) {
-			if (item.status === 'done' && item.bounds) {
-				const pos = {
-					x: item.bounds.x + item.bounds.w / 2,
-					y: item.bounds.y + item.bounds.h / 2,
-				}
-				this.planner.requests.setBeePosition(pos)
-				await new Promise((resolve) => setTimeout(resolve, REVIEW_TOUR_STOP_MS))
-			}
+		const plan = AgentAppPlanManager.getPlan(this.app.editor)
+		const stops = plan
+			.filter((item) => item.status === 'done' && item.bounds)
+			.map((item) => ({
+				x: item.bounds!.x + item.bounds!.w / 2,
+				y: item.bounds!.y + item.bounds!.h / 2,
+			}))
+
+		if (stops.length === 0) return
+
+		// Let the interrupt's scheduled request actually start streaming before
+		// checking isGenerating, which only flips true once the request begins.
+		await new Promise((resolve) => setTimeout(resolve, REVIEW_TOUR_STOP_MS))
+
+		let i = 0
+		while (planner.requests.isGenerating()) {
+			planner.requests.setBeePosition(stops[i % stops.length])
+			i++
+			await new Promise((resolve) => setTimeout(resolve, REVIEW_TOUR_STOP_MS))
 		}
 	}
 
