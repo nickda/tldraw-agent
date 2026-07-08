@@ -9,8 +9,8 @@ import { pickSlackGrumble } from '../executorVoice'
 const PLANNER_COLOR = '#6366f1'
 const EXECUTOR_COLORS = ['#f59e0b', '#10b981']
 
-/** How long the Planner pauses at each drawn item during the pre-review flythrough. */
-const REVIEW_TOUR_STOP_MS = 600
+/** How long the Planner lingers at each drawn item while touring the canvas during a review. */
+const REVIEW_TOUR_STOP_MS = 2800
 
 /** The Planner's fixed name in Team Mode. Team Mode always has exactly one planner. */
 export const PLANNER_BEE_NAME = 'Beeyonce'
