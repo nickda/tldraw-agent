@@ -12,7 +12,8 @@ import { ModelEnvironment } from '../environment'
 import { buildSystemPrompt } from '../prompt/buildSystemPrompt'
 import { getModelName } from '../prompt/getModelName'
 import { buildStreamConfig, ResponseFormat } from './buildStreamConfig'
-import { closeAndParseJson } from './closeAndParseJson'
+import { estimatePromptChars } from './estimatePromptChars'
+import { parseActionStream } from './parseActionStream'
 
 export class AgentService {
 	openai: OpenAIProvider
@@ -142,10 +143,7 @@ export class AgentService {
 		// confirm the system prompt fits the koboldcpp --contextsize before it is
 		// silently truncated. Estimate only (no tokenizer): ~4 chars per token.
 		if (modelDefinition.provider === 'local') {
-			const promptChars = messages.reduce((sum, message) => {
-				const content = message.content
-				return sum + (typeof content === 'string' ? content.length : 0)
-			}, 0)
+			const promptChars = estimatePromptChars(messages)
 			console.log(`[local] estimated prompt tokens: ~${Math.ceil(promptChars / 4)}`)
 		}
 
@@ -185,73 +183,28 @@ export class AgentService {
 			})
 			const { textStream } = result
 
-			let buffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
-			let cursor = 0
-			let maybeIncompleteAction: AgentAction | null = null
-
-			let startTime = Date.now()
-			for await (const text of textStream) {
-				buffer += text
-
-				const partialObject = closeAndParseJson(buffer)
-				if (!partialObject) continue
-
-				const actions = partialObject.actions
-				if (!Array.isArray(actions)) continue
-				if (actions.length === 0) continue
-
-				// If the events list is ahead of the cursor, we know we've completed the current event
-				// We can complete the event and move the cursor forward
-				if (actions.length > cursor) {
-					const action = actions[cursor - 1] as AgentAction
-					if (action) {
-						yield {
-							...action,
-							complete: true,
-							time: Date.now() - startTime,
-						}
-						maybeIncompleteAction = null
-					}
-					cursor++
+			const initialBuffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
+			const parser = parseActionStream(textStream, initialBuffer)
+			let finalState: { buffer: string; cursor: number } | undefined
+			while (true) {
+				const { value, done } = await parser.next()
+				if (done) {
+					finalState = value
+					break
 				}
-
-				// Now let's check the (potentially new) current event
-				// And let's yield it in its (potentially incomplete) state
-				const action = actions[cursor - 1] as AgentAction
-				if (action) {
-					// If we don't have an incomplete event yet, this is the start of a new one
-					if (!maybeIncompleteAction) {
-						startTime = Date.now()
-					}
-
-					maybeIncompleteAction = action
-
-					// Yield the potentially incomplete event
-					yield {
-						...action,
-						complete: false,
-						time: Date.now() - startTime,
-					}
-				}
+				yield value
 			}
 
-			console.log(`[STREAM] buffer length: ${buffer.length}, actions yielded: ${cursor}`)
-			if (cursor === 0 && buffer.length > 0) {
-				console.log(`[STREAM] NO ACTIONS PARSED. Buffer start: "${buffer.slice(0, 300)}"`)
+			console.log(
+				`[STREAM] buffer length: ${finalState?.buffer.length ?? 0}, actions yielded: ${finalState?.cursor ?? 0}`
+			)
+			if (finalState?.cursor === 0 && (finalState?.buffer.length ?? 0) > 0) {
+				console.log(`[STREAM] NO ACTIONS PARSED. Buffer start: "${finalState?.buffer.slice(0, 300)}"`)
 			}
 
 			// The AI SDK reports provider/model errors via `onError` (captured above)
 			// rather than throwing from the stream, so re-throw here to surface them.
 			if (streamError) throw streamError
-
-			// If we've finished receiving events, but there's still an incomplete event, we need to complete it
-			if (maybeIncompleteAction) {
-				yield {
-					...maybeIncompleteAction,
-					complete: true,
-					time: Date.now() - startTime,
-				}
-			}
 		} catch (error: any) {
 			console.error('streamActions error:', error)
 			throw error

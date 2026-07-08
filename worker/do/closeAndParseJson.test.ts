@@ -68,4 +68,19 @@ describe('closeAndParseJson', () => {
 		const result = closeAndParseJson('{"text": "a } brace"}\ntrailing')
 		expect(result).toEqual({ text: 'a } brace' })
 	})
+
+	test('strips a prose preamble that itself contains a literal brace', () => {
+		const withBraceInPreamble =
+			'I\'ll use { as an example.\n\n{"actions": [{"_type": "message", "text": "hi"}]}'
+		const result = closeAndParseJson(withBraceInPreamble)
+		expect(result).toEqual({ actions: [{ _type: 'message', text: 'hi' }] })
+	})
+
+	test('treats an escaped backslash followed by a real closing quote as the string terminator', () => {
+		// The string content is a single trailing backslash: `path\`. In JSON source
+		// that's written as `\\` immediately followed by the closing `"`. The closing
+		// quote must terminate the string, not be treated as an escaped quote.
+		const result = closeAndParseJson('{"text": "path\\\\"}')
+		expect(result).toEqual({ text: 'path\\' })
+	})
 })

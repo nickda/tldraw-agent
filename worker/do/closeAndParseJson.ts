@@ -6,13 +6,21 @@
  */
 export function closeAndParseJson(string: string) {
 	// Strip any non-JSON preamble (model may emit thinking text before the JSON
-	// when assistant prefill is disabled, e.g. on Bedrock).
-	const jsonStart = string.indexOf('{')
-	if (jsonStart === -1) return null
-	if (jsonStart > 0) {
-		string = string.slice(jsonStart)
+	// when assistant prefill is disabled, e.g. on Bedrock). The preamble itself
+	// may contain a literal '{' (e.g. prose like "use { as an example"), so try
+	// every '{' in order and use the first one that actually parses, rather than
+	// assuming the first '{' in the buffer starts the real JSON.
+	let searchFrom = 0
+	while (true) {
+		const jsonStart = string.indexOf('{', searchFrom)
+		if (jsonStart === -1) return null
+		const result = parseFromOpeningBrace(string.slice(jsonStart))
+		if (result !== null) return result
+		searchFrom = jsonStart + 1
 	}
+}
 
+function parseFromOpeningBrace(string: string) {
 	const stackOfOpenings = []
 
 	// Track openings and closings
@@ -22,8 +30,15 @@ export function closeAndParseJson(string: string) {
 		const lastOpening = stackOfOpenings.at(-1)
 
 		if (char === '"') {
-			// Check if this quote is escaped
-			if (i > 0 && string[i - 1] === '\\') {
+			// Check if this quote is escaped. Count consecutive backslashes
+			// immediately before it: an odd count means the quote itself is
+			// escaped, an even count means those backslashes are escaped
+			// backslashes (e.g. `\\"`) and this quote terminates the string.
+			let backslashCount = 0
+			for (let j = i - 1; j >= 0 && string[j] === '\\'; j--) {
+				backslashCount++
+			}
+			if (backslashCount % 2 === 1) {
 				// This is an escaped quote, skip it
 				i++
 				continue
