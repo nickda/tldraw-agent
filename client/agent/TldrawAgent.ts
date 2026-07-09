@@ -682,6 +682,11 @@ export class TldrawAgent {
 			let incompleteDiff: RecordsDiff<TLRecord> | null = null
 			const actionPromises: Promise<void>[] = []
 			let lastShapeBoundsForResting: { x: number; y: number; w: number; h: number } | null = null
+			// Complete actions dropped by sanitizeAction (e.g. a move/delete whose
+			// shapeId didn't resolve to a real shape). These vanish silently while
+			// the model, unaware, often narrates success in a sibling message. Feed
+			// them back so the next turn knows the edit never landed and can retry.
+			const rejectedActions: Streaming<AgentAction>[] = []
 			try {
 				for await (const action of this.streamAgentActions({ prompt, signal })) {
 					if (cancelled) break
@@ -713,6 +718,12 @@ export class TldrawAgent {
 								// Sanitize the agent's action
 								const transformedAction = actionUtil.sanitizeAction(action, helpers)
 								if (!transformedAction) {
+									// A complete action was dropped (usually an unresolvable
+									// shapeId). Record it so the model is told after the turn
+									// instead of believing the edit succeeded.
+									if (action.complete) {
+										rejectedActions.push(action)
+									}
 									return
 								}
 
@@ -778,6 +789,23 @@ export class TldrawAgent {
 				if (!cancelled && lastShapeBoundsForResting) {
 					const restingPos = getBeePositionFromBounds(lastShapeBoundsForResting, 'resting', editor.getZoomLevel())
 					this.requests.setBeePosition(restingPos)
+				}
+
+				// If actions were silently dropped (unresolvable shapeIds), schedule a
+				// follow-up so the model learns the edits never applied. Without this
+				// the shape stays put while the model reports success, and nothing
+				// ever corrects it. Only schedule when the model hasn't already queued
+				// its own continuation, to avoid clobbering it.
+				if (!cancelled && rejectedActions.length > 0 && !this.requests.getScheduledRequest()) {
+					const details = rejectedActions
+						.map((a) => describeRejectedAction(a))
+						.join('\n')
+					this.schedule({
+						agentMessages: [
+							`Some of your actions did not apply because their shape IDs did not match any shape on the canvas, so those edits were skipped even if you already described them as done:\n${details}\nLook at the current shapes and their real IDs, then reissue the edits against IDs that exist.`,
+						],
+						source: 'self',
+					})
 				}
 			} catch (e) {
 				if (e === 'Cancelled by user' || (e instanceof Error && e.name === 'AbortError')) {
@@ -857,4 +885,19 @@ export class TldrawAgent {
 			reader.releaseLock()
 		}
 	}
+}
+
+/**
+ * One human-readable line describing a dropped action and the shape ID(s) it
+ * targeted, for the follow-up that tells the model its edit did not apply.
+ */
+function describeRejectedAction(action: Streaming<AgentAction>): string {
+	const anyAction = action as { _type: string; shapeId?: string; shapeIds?: string[] }
+	const ids = anyAction.shapeId
+		? [anyAction.shapeId]
+		: Array.isArray(anyAction.shapeIds)
+			? anyAction.shapeIds
+			: []
+	const idText = ids.length > 0 ? ids.join(', ') : '(no shape id)'
+	return `- ${anyAction._type} targeting ${idText}`
 }
