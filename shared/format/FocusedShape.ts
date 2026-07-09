@@ -125,16 +125,18 @@ export type FocusedDrawShape = z.infer<typeof FocusedDrawShape>
 const FocusedUnknownShape = z
 	.object({
 		_type: z.literal('unknown'),
+		h: z.number(),
 		note: z.string(),
 		shapeId: SimpleShapeIdSchema,
 		subType: z.string(),
+		w: z.number(),
 		x: z.number(),
 		y: z.number(),
 	})
 	.meta({
 		title: 'Unknown Shape',
 		description:
-			"A special shape that is not represented by one of the canvas's core shape types. The AI cannot create these shapes, but it *can* interact with them. eg: The AI can move these shapes. The `subType` property contains the internal name of the shape's type.",
+			"A special shape that is not represented by one of the canvas's core shape types. The AI cannot create these shapes, but it *can* interact with them. eg: The AI can move these shapes. The `subType` property contains the internal name of the shape's type, and `w`/`h` its extent on the canvas.",
 	})
 
 export type FocusedUnknownShape = z.infer<typeof FocusedUnknownShape>

@@ -20,6 +20,7 @@ import {
 	Vec,
 	VecLike,
 } from 'tldraw'
+import { SimpleShapeId } from '../types/ids-schema'
 import { asColor } from './FocusedColor'
 import { convertFocusedFillToTldrawFill } from './FocusedFill'
 import { convertFocusedFontSizeToTldrawFontSizeAndScale } from './FocusedFontSize'
@@ -226,7 +227,11 @@ function convertTextShapeToTldrawShape(
 		},
 	}
 
-	const unpositionedBounds = getDummyBounds(editor, unpositionedShape)
+	// Only measure bounds (a real store mutation, reverted afterwards) when the
+	// anchor actually needs the shape's width/height to offset its position.
+	// `top-left` needs neither, so it skips this work entirely.
+	let cachedBounds: Box | undefined
+	const getBounds = () => (cachedBounds ??= getDummyBounds(editor, unpositionedShape))
 
 	const position = new Vec(defaultTextShape.x ?? 0, defaultTextShape.y ?? 0)
 	const x = focusedShape.x ?? defaultTextShape.x ?? 0
@@ -238,43 +243,43 @@ function convertTextShapeToTldrawShape(
 			break
 		}
 		case 'top-center': {
-			position.x = x - unpositionedBounds.w / 2
+			position.x = x - getBounds().w / 2
 			position.y = y
 			break
 		}
 		case 'top-right': {
-			position.x = x - unpositionedBounds.w
+			position.x = x - getBounds().w
 			position.y = y
 			break
 		}
 		case 'bottom-left': {
 			position.x = x
-			position.y = y - unpositionedBounds.h
+			position.y = y - getBounds().h
 			break
 		}
 		case 'bottom-center': {
-			position.x = x - unpositionedBounds.w / 2
-			position.y = y - unpositionedBounds.h
+			position.x = x - getBounds().w / 2
+			position.y = y - getBounds().h
 			break
 		}
 		case 'bottom-right': {
-			position.x = x - unpositionedBounds.w
-			position.y = y - unpositionedBounds.h
+			position.x = x - getBounds().w
+			position.y = y - getBounds().h
 			break
 		}
 		case 'center-left': {
 			position.x = x
-			position.y = y - unpositionedBounds.h / 2
+			position.y = y - getBounds().h / 2
 			break
 		}
 		case 'center-right': {
-			position.x = x - unpositionedBounds.w
-			position.y = y - unpositionedBounds.h / 2
+			position.x = x - getBounds().w
+			position.y = y - getBounds().h / 2
 			break
 		}
 		case 'center': {
-			position.x = focusedShape.x - unpositionedBounds.w / 2
-			position.y = focusedShape.y - unpositionedBounds.h / 2
+			position.x = x - getBounds().w / 2
+			position.y = y - getBounds().h / 2
 			break
 		}
 	}
@@ -746,8 +751,14 @@ function getDummyBounds(editor: Editor, shape: TLShape): Box {
 export function convertPartialFocusedShapeToTldrawShape(
 	editor: Editor,
 	focusedShape: FocusedShapePartial,
-	{ defaultShape, complete }: { defaultShape: Partial<TLShape>; complete: boolean }
+	{
+		defaultShape,
+		complete,
+		fallbackShapeId,
+	}: { defaultShape: Partial<TLShape>; complete: boolean; fallbackShapeId?: SimpleShapeId }
 ): { shape: TLShape | null; bindings: TLBindingCreate[] | null; position: VecLike | null } {
+	const streamingShapeId = fallbackShapeId ?? ('streaming-shape' as SimpleShapeId)
+
 	// For text shapes, require: x, y, text
 	if (focusedShape._type === 'text') {
 		const partial = focusedShape as FocusedTextShapePartial
@@ -758,7 +769,7 @@ export function convertPartialFocusedShapeToTldrawShape(
 		const fullShape: FocusedTextShape = {
 			...partial,
 			_type: 'text',
-			shapeId: partial.shapeId ?? ('streaming-shape' as any),
+			shapeId: partial.shapeId ?? streamingShapeId,
 			note: partial.note ?? '',
 			anchor: partial.anchor ?? 'top-left',
 			color: partial.color ?? 'black',
@@ -783,7 +794,7 @@ export function convertPartialFocusedShapeToTldrawShape(
 		const fullShape: FocusedGeoShape = {
 			...partial,
 			_type: focusedShape._type as FocusedGeoShape['_type'],
-			shapeId: partial.shapeId ?? ('streaming-shape' as any),
+			shapeId: partial.shapeId ?? streamingShapeId,
 			note: partial.note ?? '',
 			color: partial.color ?? 'black',
 			textAlign: partial.textAlign || 'middle',

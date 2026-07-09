@@ -4,6 +4,7 @@ import {
 	Editor,
 	isPageId,
 	reverseRecordsDiff,
+	sortByIndex,
 	TLArrowBinding,
 	TLArrowShape,
 	TLDrawShape,
@@ -190,20 +191,35 @@ function convertGeoShapeToFocused(editor: Editor, shape: TLGeoShape): FocusedGeo
 
 function convertLineShapeToFocused(editor: Editor, shape: TLLineShape): FocusedLineShape {
 	const bounds = getSimpleBounds(editor, shape)
-	const points = Object.values(shape.props.points).sort((a, b) => a.index.localeCompare(b.index))
+	const points = Object.values(shape.props.points).sort(sortByIndex)
+	const firstPoint = points[0]
+	const lastPoint = points[points.length - 1]
+
+	// FocusedLineShape only models two endpoints. A line with more than two
+	// points would otherwise be silently truncated to its first two points
+	// (dropping the last one); use the true first/last points instead, and
+	// call out the simplification in the note so the model isn't misled about
+	// the shape it's seeing.
+	const note = (shape.meta.note as string) ?? ''
+	const hasIntermediatePoints = points.length > 2
+	const truncationNote = hasIntermediatePoints
+		? `(This line has ${points.length} points; only the first and last are represented here.)`
+		: ''
+
 	return {
 		_type: 'line',
 		color: shape.props.color,
-		note: (shape.meta.note as string) ?? '',
+		note: [note, truncationNote].filter(Boolean).join(' '),
 		shapeId: convertTldrawIdToSimpleId(shape.id),
-		x1: points[0].x + bounds.x,
-		x2: points[1].x + bounds.x,
-		y1: points[0].y + bounds.y,
-		y2: points[1].y + bounds.y,
+		x1: firstPoint.x + bounds.x,
+		x2: lastPoint.x + bounds.x,
+		y1: firstPoint.y + bounds.y,
+		y2: lastPoint.y + bounds.y,
 	}
 }
 
 function convertArrowShapeToFocused(editor: Editor, shape: TLArrowShape): FocusedArrowShape {
+	const util = editor.getShapeUtil(shape)
 	const bounds = getSimpleBounds(editor, shape)
 	const bindings = editor.store.query.records('binding').get()
 	const arrowBindings = bindings.filter(
@@ -219,7 +235,7 @@ function convertArrowShapeToFocused(editor: Editor, shape: TLArrowShape): Focuse
 		fromId: startBinding ? convertTldrawIdToSimpleId(startBinding.toId) : null,
 		note: (shape.meta.note as string) ?? '',
 		shapeId: convertTldrawIdToSimpleId(shape.id),
-		text: (shape.meta.text as string) ?? '',
+		text: util.getText(shape) ?? '',
 		toId: endBinding ? convertTldrawIdToSimpleId(endBinding.toId) : null,
 		x1: shape.props.start.x + bounds.x,
 		x2: shape.props.end.x + bounds.x,
@@ -247,9 +263,11 @@ function convertUnknownShapeToFocused(editor: Editor, shape: TLShape): FocusedUn
 	const bounds = getSimpleBounds(editor, shape)
 	return {
 		_type: 'unknown',
+		h: bounds.h,
 		note: (shape.meta.note as string) ?? '',
 		shapeId: convertTldrawIdToSimpleId(shape.id),
 		subType: shape.type,
+		w: bounds.w,
 		x: bounds.x,
 		y: bounds.y,
 	}

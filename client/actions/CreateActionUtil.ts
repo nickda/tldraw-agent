@@ -5,6 +5,7 @@ import {
 } from '../../shared/format/convertFocusedShapeToTldrawShape'
 import { FocusedShape } from '../../shared/format/FocusedShape'
 import { CreateAction } from '../../shared/schema/AgentActionSchemas'
+import { SimpleShapeId } from '../../shared/types/ids-schema'
 import { Streaming } from '../../shared/types/Streaming'
 import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
@@ -90,6 +91,10 @@ export const CreateActionUtil = registerActionUtil(
 			const result = convertPartialFocusedShapeToTldrawShape(editor, shapePartial, {
 				defaultShape: getDefaultShape(shape._type, action.complete),
 				complete: action.complete,
+				// Streaming shapes without an explicit id fall back to an id scoped to
+				// this agent, so concurrent executors (Team Mode) never clobber each
+				// other's in-progress shape.
+				fallbackShapeId: `streaming-shape-${this.agent.id}` as SimpleShapeId,
 			})
 
 			if (!result.shape) return
