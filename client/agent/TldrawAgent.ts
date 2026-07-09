@@ -17,6 +17,7 @@ import { AgentHelpers } from '../AgentHelpers'
 import { getModeNode } from '../modes/AgentModeChart'
 import { AgentModeType } from '../modes/AgentModeDefinitions'
 import { getPromptPartUtilsRecord, PromptPartUtil } from '../parts/PromptPartUtil'
+import { capChatHistory } from '../utils/capChatHistory'
 import { extractBeePosition, extractBeePositionFromDiff, getBeePositionFromBounds } from '../utils/beePosition'
 import { generateFairyName } from '../utils/generateFairyName'
 import { AgentActionManager } from './managers/AgentActionManager'
@@ -218,7 +219,11 @@ export class TldrawAgent {
 	 */
 	serializeState(): PersistedAgentState {
 		return {
-			chatHistory: this.chat.getHistory(),
+			// Capped so a long-running session's persisted payload (each item can
+			// carry a full RecordsDiff) doesn't grow unboundedly toward the
+			// localStorage quota. The model-facing chat history part applies the
+			// same cap for the same reason.
+			chatHistory: capChatHistory(this.chat.getHistory()),
 			chatOrigin: this.chatOrigin.getOrigin(),
 			todoList: this.todos.getTodos(),
 			contextItems: this.context.getItems(),

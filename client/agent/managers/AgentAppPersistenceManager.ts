@@ -1,4 +1,4 @@
-import { react } from 'tldraw'
+import { debounce, react } from 'tldraw'
 import { PersistedAgentState, TldrawAgent } from '../TldrawAgent'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 
@@ -6,6 +6,15 @@ import { BaseAgentAppManager } from './BaseAgentAppManager'
  * The key prefix used for localStorage persistence.
  */
 const STORAGE_PREFIX = 'tldraw-agent-app'
+
+/**
+ * How long to wait after the last change before writing to localStorage.
+ * Chat history (and other watched state) changes on every streamed action
+ * delta while a prompt is generating, not just when an action completes, so
+ * saving on every change can fire many times per second. Debouncing coalesces
+ * a burst of deltas into a single write once things go quiet.
+ */
+const AUTO_SAVE_DEBOUNCE_MS = 500
 
 /**
  * The persisted state for the entire app.
@@ -37,6 +46,13 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 	 * Cleanup functions for per-agent state watchers, keyed by agent ID.
 	 */
 	private agentWatcherCleanupFns = new Map<string, () => void>()
+
+	/**
+	 * Debounced wrapper around saveState(). Reactive watchers call this
+	 * instead of saveState() directly, so a burst of streamed deltas
+	 * coalesces into a single write.
+	 */
+	private debouncedSaveState = debounce(() => this.saveState(), AUTO_SAVE_DEBOUNCE_MS)
 
 	/**
 	 * Check if state is currently being loaded.
@@ -129,7 +145,7 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 
 			// Save when agent list changes (if not loading)
 			if (!this.isLoadingState) {
-				this.saveState()
+				this.debouncedSaveState()
 			}
 		})
 	}
@@ -149,7 +165,7 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 
 			// Save if not currently loading
 			if (!this.isLoadingState) {
-				this.saveState()
+				this.debouncedSaveState()
 			}
 		})
 	}
@@ -171,6 +187,8 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 	 * Stop auto-saving and clean up watchers.
 	 */
 	stopAutoSave() {
+		this.debouncedSaveState.cancel()
+
 		if (this.agentsListCleanup) {
 			this.agentsListCleanup()
 			this.agentsListCleanup = null
@@ -191,9 +209,17 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 
 	/**
 	 * Dispose of the persistence manager.
+	 *
+	 * Flushes any pending debounced save first: `debounce()`'s `cancel()`
+	 * (called by `stopAutoSave()`) only clears the timer, it doesn't run the
+	 * callback, so without an explicit flush here a save that was still
+	 * waiting out its quiet period would be lost when the app tears down.
 	 */
 	override dispose() {
 		this.stopAutoSave()
+		if (!this.isLoadingState) {
+			this.saveState()
+		}
 		super.dispose()
 	}
 
@@ -221,6 +247,10 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 
 	/**
 	 * Save a value to localStorage.
+	 *
+	 * A failure (e.g. quota exceeded) is non-fatal, but is routed through the
+	 * app's `onError` in addition to a console line, so it's not a completely
+	 * silent no-op the user has no way to notice.
 	 */
 	private saveValue<T>(key: string, value: T): void {
 		const localStorage = globalThis.localStorage
@@ -229,8 +259,9 @@ export class AgentAppPersistenceManager extends BaseAgentAppManager {
 		try {
 			const fullKey = `${STORAGE_PREFIX}:${key}`
 			localStorage.setItem(fullKey, JSON.stringify(value))
-		} catch {
-			console.warn(`Couldn't save ${key} to localStorage`)
+		} catch (e) {
+			console.warn(`Couldn't save ${key} to localStorage`, e)
+			this.app.options.onError(e)
 		}
 	}
 }
