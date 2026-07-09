@@ -1207,3 +1207,13 @@ button.prompt-tag span {
 	0%, 100% { transform: translateY(0); }
 	50% { transform: translateY(2px); }
 }
+
+/*
+ * Hide tldraw's "Get a license for production" watermark. This instance runs
+ * unlicensed for local/personal use, so the watermark is suppressed here. If
+ * this is ever deployed publicly or used in production, obtain a tldraw
+ * license and remove this rule rather than shipping it unlicensed.
+ */
+.tl-watermark_SEE-LICENSE {
+	display: none !important;
+}
