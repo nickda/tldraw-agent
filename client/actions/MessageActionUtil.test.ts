@@ -1,5 +1,31 @@
 import { describe, expect, test } from 'bun:test'
-import { stripEmDashes } from './MessageActionUtil'
+import { britishiseSpelling, stripEmDashes } from './MessageActionUtil'
+
+describe('britishiseSpelling', () => {
+	test('converts common American spellings to British', () => {
+		expect(britishiseSpelling('a salmon-colored cafeteria')).toBe('a salmon-coloured cafeteria')
+		expect(britishiseSpelling('the color pass ran')).toBe('the colour pass ran')
+		expect(britishiseSpelling('fixes the figure colors')).toBe('fixes the figure colours')
+		expect(britishiseSpelling('centered in the canvas')).toBe('centred in the canvas')
+		expect(britishiseSpelling('a gray box')).toBe('a grey box')
+	})
+
+	test('preserves casing', () => {
+		expect(britishiseSpelling('Colored')).toBe('Coloured')
+		expect(britishiseSpelling('COLOR')).toBe('COLOUR')
+		expect(britishiseSpelling('Center')).toBe('Centre')
+	})
+
+	test('leaves words not in the map untouched, including risky look-alikes', () => {
+		expect(britishiseSpelling('size prize her doctor horror')).toBe('size prize her doctor horror')
+	})
+
+	test('leaves text with no American spellings unchanged', () => {
+		expect(britishiseSpelling('Och, a fine wee beastie, nae bother.')).toBe(
+			'Och, a fine wee beastie, nae bother.'
+		)
+	})
+})
 
 describe('stripEmDashes', () => {
 	test('replaces an em dash with a comma', () => {

@@ -12,6 +12,72 @@ export function stripEmDashes(text: string): string {
 	return text.replace(/\s*[—–]\s*/g, ', ').replace(/\s*--\s*/g, ', ')
 }
 
+/**
+ * American -> British spellings for the words that actually turn up in the
+ * bees' drawing commentary. A curated whole-word map, not suffix regex, so
+ * common words like "size" or "her" are never mangled. Keys must be lower
+ * case; casing of the original word (all-caps or capitalised first letter) is
+ * preserved on replacement.
+ */
+const BRITISH_SPELLINGS: Record<string, string> = {
+	color: 'colour',
+	colors: 'colours',
+	colored: 'coloured',
+	coloring: 'colouring',
+	colorful: 'colourful',
+	discolored: 'discoloured',
+	center: 'centre',
+	centers: 'centres',
+	centered: 'centred',
+	centering: 'centring',
+	gray: 'grey',
+	grayish: 'greyish',
+	favorite: 'favourite',
+	favorites: 'favourites',
+	favor: 'favour',
+	neighbor: 'neighbour',
+	neighbors: 'neighbours',
+	neighboring: 'neighbouring',
+	organize: 'organise',
+	organized: 'organised',
+	organizing: 'organising',
+	recognize: 'recognise',
+	recognized: 'recognised',
+	realize: 'realise',
+	realized: 'realised',
+	meter: 'metre',
+	meters: 'metres',
+	liter: 'litre',
+	liters: 'litres',
+	traveled: 'travelled',
+	traveling: 'travelling',
+	canceled: 'cancelled',
+	labeled: 'labelled',
+	labeling: 'labelling',
+	mustache: 'moustache',
+}
+
+/** Re-apply the casing pattern of `original` (ALL CAPS or Capitalised) to `replacement`. */
+function matchCase(original: string, replacement: string): string {
+	if (original === original.toUpperCase()) return replacement.toUpperCase()
+	if (original[0] === original[0].toUpperCase()) {
+		return replacement[0].toUpperCase() + replacement.slice(1)
+	}
+	return replacement
+}
+
+/**
+ * Convert American spellings to British in message text, so every bee speaks
+ * the Queen's English regardless of what the model produced. Whole-word,
+ * case-preserving; leaves any word not in the map untouched.
+ */
+export function britishiseSpelling(text: string): string {
+	return text.replace(/[A-Za-z]+/g, (word) => {
+		const british = BRITISH_SPELLINGS[word.toLowerCase()]
+		return british ? matchCase(word, british) : word
+	})
+}
+
 export const MessageActionUtil = registerActionUtil(
 	class MessageActionUtil extends AgentActionUtil<MessageAction> {
 		static override type = 'message' as const
@@ -39,7 +105,7 @@ export const MessageActionUtil = registerActionUtil(
 			}
 
 			if (typeof action.text === 'string') {
-				return { ...action, text: stripEmDashes(action.text) }
+				return { ...action, text: britishiseSpelling(stripEmDashes(action.text)) }
 			}
 			return action
 		}
