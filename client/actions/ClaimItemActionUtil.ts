@@ -56,17 +56,24 @@ export const ClaimItemActionUtil = registerActionUtil(
 				this.agent.requests.setSlacking(false)
 			}
 
+			// Executors get their in-character voice line once, injected into
+			// dispatchExecutors' initial prompt. Every claim after that is a later
+			// turn in the same dispatch, so tell the model explicitly not to speak
+			// here rather than relying on that first prompt's wording to hold across
+			// however many claims follow, which it does not reliably do.
+			const staySilent = ' Do not emit a message action here; stay silent and just draw.'
+
 			if (claimed.bounds) {
 				this.agent.schedule({
 					bounds: claimed.bounds,
 					agentMessages: [
-						`Draw "${claimed.text}" inside region x=${claimed.bounds.x} y=${claimed.bounds.y} w=${claimed.bounds.w} h=${claimed.bounds.h}. Use many shapes with color and fills. No text labels.`,
+						`Draw "${claimed.text}" inside region x=${claimed.bounds.x} y=${claimed.bounds.y} w=${claimed.bounds.w} h=${claimed.bounds.h}. Use many shapes with color and fills. No text labels.${staySilent}`,
 					],
 				})
 			} else {
 				this.agent.schedule({
 					agentMessages: [
-						`Draw "${claimed.text}". Use many shapes with color and fills. No text labels.`,
+						`Draw "${claimed.text}". Use many shapes with color and fills. No text labels.${staySilent}`,
 					],
 				})
 			}
