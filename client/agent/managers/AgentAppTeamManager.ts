@@ -3,6 +3,7 @@ import { AgentAppPlanManager } from './AgentAppPlanManager'
 import { shouldStartReview, MAX_REVIEW_ROUNDS } from './sharedPlan'
 import { BaseAgentAppManager } from './BaseAgentAppManager'
 import { TldrawAgent } from '../TldrawAgent'
+import type { TldrawAgentApp } from '../TldrawAgentApp'
 import { getTeamBeeSpawnPosition } from '../../utils/beePosition'
 import { pickSlackGrumble } from '../executorVoice'
 
@@ -31,10 +32,10 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 
 	private planner: TldrawAgent | null = null
 	private executors: TldrawAgent[] = []
-	private coordinatorCleanup: (() => void) | null = null
 	private reviewGuard = false
+	private isDisposing = false
 
-	constructor(app: any) {
+	constructor(app: TldrawAgentApp) {
 		super(app)
 		AgentAppTeamManager.instance = this
 	}
@@ -64,8 +65,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	}
 
 	/**
-	 * Activate Team Mode by spawning the team (if not already present) and
-	 * starting the reactive coordinator.
+	 * Activate Team Mode by spawning the team (if not already present).
 	 */
 	activate() {
 		if (this.planner) return
@@ -83,7 +83,6 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			for (const solo of soloAgents) {
 				this.app.agents.deleteAgent(solo.id)
 			}
-			this.startCoordinator()
 			return
 		}
 
@@ -115,8 +114,6 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 			executor.requests.setBeePosition(getTeamBeeSpawnPosition(viewportBounds, i + 1))
 			this.executors.push(executor)
 		}
-
-		this.startCoordinator()
 	}
 
 	/**
@@ -138,21 +135,6 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	 */
 	getExecutors(): TldrawAgent[] {
 		return this.executors
-	}
-
-	/**
-	 * Route a user prompt to the Planner via interrupt (safe if already generating).
-	 */
-	promptPlanner(message: string) {
-		if (!this.planner) return
-		this.planner.interrupt({
-			input: {
-				agentMessages: [
-					`You are ${PLANNER_BEE_NAME}, the Queen Bee planner. Decompose this user request into a Shared Plan using the writePlan action. Each plan item must have: text (what to draw), and disjoint bounds (x, y, w, h) so Executors draw in separate regions. After writing the plan, use dispatchExecutors to start the Executors.\n\nUser request: ${message}`,
-				],
-				source: 'user',
-			},
-		})
 	}
 
 	/**
@@ -213,11 +195,41 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				// much longer) generation itself.
 				this.animateReviewTourWhileGenerating()
 
-				setTimeout(() => {
-					this.reviewGuard = false
-				}, 100)
+				// Release the guard only once the review request has actually
+				// finished generating, not after a fixed delay. A review can
+				// legitimately run for many seconds, and staggered executor
+				// completions used to release the guard early and double-trigger
+				// a second review while the first was still in flight.
+				await this.waitForPlannerIdle()
+				this.reviewGuard = false
 			}
 		}, 50)
+	}
+
+	/**
+	 * Wait until the review request has started generating and then finished,
+	 * so callers can release re-entrancy guards based on real request state
+	 * instead of a fixed timer. `interrupt()`'s scheduled request only flips
+	 * `isGenerating()` true once it actually starts streaming, so we first wait
+	 * (bounded) for that to happen before waiting for it to go false again.
+	 * Otherwise a check made before the request starts would see `false` and
+	 * return immediately, as if the review had already finished. If the
+	 * planner disappears (reset/dispose racing in) or the scheduled request
+	 * never starts (e.g. it throws before setting isPrompting), the start-wait
+	 * bails out via the same bounded loop rather than treating either case as
+	 * "still waiting to start" for the full timeout.
+	 */
+	private async waitForPlannerIdle(): Promise<void> {
+		const poll = () => new Promise((resolve) => setTimeout(resolve, 100))
+		const maxStartWaitMs = 5000
+		let waited = 0
+		while (this.planner && !this.planner.requests.isGenerating() && waited < maxStartWaitMs) {
+			await poll()
+			waited += 100
+		}
+		while (this.planner?.requests.isGenerating()) {
+			await poll()
+		}
 	}
 
 	private async animateReviewTourWhileGenerating(): Promise<void> {
@@ -247,17 +259,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 	}
 
 
-	private startCoordinator() {
-		// No-op: review loop is now triggered explicitly via checkReviewLoop()
-		// called from executing.onPromptEnd when executor goes idle.
-	}
-
 	reset(): void {
-		if (this.coordinatorCleanup) {
-			this.coordinatorCleanup()
-			this.coordinatorCleanup = null
-		}
-
 		const wasActive = this.planner !== null
 
 		if (this.planner) {
@@ -270,14 +272,20 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		this.executors = []
 		this.reviewGuard = false
 
-		// Restore a solo agent if team was active
-		if (wasActive) {
+		// Restore a solo agent if team was active, unless we're mid-disposal:
+		// persistence watchers are already torn down by then, and the replacement
+		// agent would just get disposed again immediately after.
+		if (wasActive && !this.isDisposing) {
 			this.app.agents.ensureAtLeastOneAgent()
 		}
 	}
 
 	override dispose(): void {
+		this.isDisposing = true
 		this.reset()
 		super.dispose()
+		if (AgentAppTeamManager.instance === this) {
+			AgentAppTeamManager.instance = null
+		}
 	}
 }
