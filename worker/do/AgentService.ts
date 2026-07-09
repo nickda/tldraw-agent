@@ -184,7 +184,7 @@ export class AgentService {
 			const { textStream } = result
 
 			const initialBuffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
-			const parser = parseActionStream(textStream, initialBuffer)
+			const parser = parseActionStream(textStream, initialBuffer, () => streamError !== null)
 			let finalState: { buffer: string; cursor: number } | undefined
 			while (true) {
 				const { value, done } = await parser.next()

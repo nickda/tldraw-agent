@@ -5,9 +5,13 @@ async function* toStream(chunks: string[]) {
 	for (const chunk of chunks) yield chunk
 }
 
-async function collect(textStream: AsyncIterable<string>, initialBuffer = '') {
+async function collect(
+	textStream: AsyncIterable<string>,
+	initialBuffer = '',
+	hasError: () => boolean = () => false
+) {
 	const events: any[] = []
-	const generator = parseActionStream(textStream, initialBuffer)
+	const generator = parseActionStream(textStream, initialBuffer, hasError)
 	while (true) {
 		const { value, done } = await generator.next()
 		if (done) return { events, finalState: value }
@@ -56,5 +60,20 @@ describe('parseActionStream', () => {
 		const completeEvents = events.filter((e) => e.complete)
 		expect(completeEvents).toHaveLength(1)
 		expect(completeEvents[0].text).toBe('a')
+	})
+
+	test('does not flush the trailing incomplete action as complete when the stream errored', async () => {
+		// The stream ends with a partial action still pending (no closing "]}"),
+		// simulating a provider error reported via onError after textStream stops
+		// yielding chunks. hasError() returning true must suppress the final flush
+		// entirely: a truncated response from a failed call is never complete.
+		const { events } = await collect(
+			toStream(['{"actions": [{"_type": "message", "text": "a"}']),
+			'',
+			() => true
+		)
+
+		const completeEvents = events.filter((e) => e.complete)
+		expect(completeEvents).toHaveLength(0)
 	})
 })

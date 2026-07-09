@@ -8,10 +8,20 @@ import { closeAndParseJson } from './closeAndParseJson'
  * more as complete. A single chunk can cause the parsed action count to jump
  * by more than one (e.g. two short actions land in the same chunk), so every
  * newly-completed action in that jump is yielded, not just the first.
+ *
+ * `hasError`, if provided, is checked once the stream ends. The AI SDK
+ * reports provider/model errors via a separate `onError` callback rather than
+ * throwing from `textStream`, so the `for await` loop below can exit
+ * normally (as if the stream finished cleanly) even when the model call
+ * actually failed partway through. If `hasError()` is true at that point, the
+ * trailing incomplete action is dropped instead of being flushed as
+ * `complete: true`: a truncated response from a failed call should never be
+ * handed to a caller as a finished action.
  */
 export async function* parseActionStream(
 	textStream: AsyncIterable<string>,
-	initialBuffer = ''
+	initialBuffer = '',
+	hasError: () => boolean = () => false
 ): AsyncGenerator<Streaming<AgentAction>, { buffer: string; cursor: number }> {
 	let buffer = initialBuffer
 	let cursor = 0
@@ -64,8 +74,10 @@ export async function* parseActionStream(
 		}
 	}
 
-	// If we've finished receiving events, but there's still an incomplete event, we need to complete it
-	if (maybeIncompleteAction) {
+	// If we've finished receiving events, but there's still an incomplete event,
+	// we need to complete it, unless the stream ended because of an error: a
+	// truncated action from a failed call must not be reported as complete.
+	if (maybeIncompleteAction && !hasError()) {
 		yield {
 			...maybeIncompleteAction,
 			complete: true,
