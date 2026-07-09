@@ -34,6 +34,14 @@ export function ChatPanel() {
 
 			inputRef.current.value = ''
 
+			// Start each user prompt from a clean Shared Plan and review counter.
+			// Both persist on the editor, so without this the previous prompt's
+			// completed plan items and its maxed-out review round carry over: the
+			// next request starts already at MAX_REVIEW_ROUNDS and reasons over a
+			// stale done plan, which stalls and slows the run. The canvas shapes are
+			// untouched, so a follow-up like "improve it" still builds on the drawing.
+			app.plan.reset()
+
 			const planner = app.team.getPlanner()
 			if (planner) {
 				const hasExistingShapes = planner.editor.getCurrentPageShapes().length > 0
