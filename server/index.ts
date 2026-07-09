@@ -1,11 +1,10 @@
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
-import { AgentAction } from '../shared/types/AgentAction'
 import { AgentPrompt } from '../shared/types/AgentPrompt'
-import { Streaming } from '../shared/types/Streaming'
 import { AgentModelName, isValidModelName, getAgentModelDefinition } from '../shared/models'
 import { AgentService } from '../worker/do/AgentService'
+import { createSSEStreamResponse } from '../worker/do/createSSEStreamResponse'
 import { ModelEnvironment } from '../worker/environment'
 
 // Node backend for the local-model path. Reuses AgentService unchanged; it is
@@ -79,53 +78,7 @@ app.post('/stream', async (c) => {
 		}
 	}
 
-	const encoder = new TextEncoder()
-
-	// Track whether the client has gone away. Firing a new prompt cancels the
-	// previous fetch, which closes the controller; enqueuing after that throws
-	// ERR_INVALID_STATE. The flag lets us stop pulling from the model and skip
-	// any further enqueue/close on a dead stream.
-	let cancelled = false
-
-	const readable = new ReadableStream<Uint8Array>({
-		async start(controller) {
-			const send = (payload: unknown) => {
-				if (cancelled) return
-				controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
-			}
-			try {
-				for await (const change of service.stream(prompt) as AsyncGenerator<
-					Streaming<AgentAction>
-				>) {
-					if (cancelled) break
-					send(change)
-				}
-			} catch (error: any) {
-				const msg = error?.message || error?.toString?.() || 'Unknown stream error'
-				console.error('Stream error:', msg, error)
-				send({ error: msg })
-			} finally {
-				if (!cancelled) controller.close()
-			}
-		},
-		cancel() {
-			// Client disconnected (e.g. user fired a new prompt). Stop streaming.
-			cancelled = true
-		},
-	})
-
-	// Same headers the Durable Object set, so SSE / buffering behaviour matches.
-	return new Response(readable, {
-		headers: {
-			'Content-Type': 'text/event-stream',
-			'Cache-Control': 'no-cache, no-transform',
-			Connection: 'keep-alive',
-			'X-Accel-Buffering': 'no',
-			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'POST, OPTIONS',
-			'Access-Control-Allow-Headers': 'Content-Type',
-		},
-	})
+	return createSSEStreamResponse((signal) => service.stream(prompt, signal))
 })
 
 // In production the Pi runs `node server` serving the built client. In Mac dev,

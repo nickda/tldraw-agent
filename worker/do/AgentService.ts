@@ -97,9 +97,12 @@ export class AgentService {
 		return provider.chat(modelId)
 	}
 
-	async *stream(prompt: AgentPrompt): AsyncGenerator<Streaming<AgentAction>> {
+	async *stream(
+		prompt: AgentPrompt,
+		signal?: AbortSignal
+	): AsyncGenerator<Streaming<AgentAction>> {
 		try {
-			for await (const event of this.streamActions(prompt)) {
+			for await (const event of this.streamActions(prompt, signal)) {
 				yield event
 			}
 		} catch (error: any) {
@@ -108,7 +111,10 @@ export class AgentService {
 		}
 	}
 
-	private async *streamActions(prompt: AgentPrompt): AsyncGenerator<Streaming<AgentAction>> {
+	private async *streamActions(
+		prompt: AgentPrompt,
+		signal?: AbortSignal
+	): AsyncGenerator<Streaming<AgentAction>> {
 		const requestStartTime = Date.now()
 		const modelName = getModelName(prompt)
 		let model = this.getModel(modelName)
@@ -169,6 +175,7 @@ export class AgentService {
 				maxOutputTokens: 65536,
 				...(modelDefinition.provider === 'bedrock' ? {} : { temperature: 0 }),
 				providerOptions,
+				abortSignal: signal,
 				onAbort() {
 					console.warn('Stream actions aborted')
 				},

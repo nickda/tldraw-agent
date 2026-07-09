@@ -420,7 +420,11 @@ export class TldrawAgent {
 			try {
 				await this.request(request)
 			} catch (e) {
+				if (e === 'Cancelled by user' || (e instanceof Error && e.name === 'AbortError')) {
+					return
+				}
 				console.error('Error data:', e)
+				this.onError(e)
 				return
 			}
 
@@ -455,7 +459,15 @@ export class TldrawAgent {
 				return
 			}
 
-			// If there *is* a scheduled request...
+			// If there *is* a scheduled request, take ownership of it before
+			// awaiting its data. A concurrent schedule() call (e.g. from another
+			// agent's self-scheduled action) reads getScheduledRequest() and merges
+			// into whatever it finds there; clearing first means that merge target
+			// is already gone, so a concurrent call creates a fresh scheduled
+			// request instead of merging into (and then having wiped by
+			// clearScheduledRequest) the one we're about to process.
+			this.requests.clearScheduledRequest()
+
 			// Add the scheduled request to chat history
 			const resolvedData = await Promise.all(scheduledRequest.data)
 			this.chat.push({
@@ -463,8 +475,6 @@ export class TldrawAgent {
 				data: resolvedData,
 			})
 
-			// Handle the scheduled request and clear it
-			this.requests.clearScheduledRequest()
 			await this.prompt(scheduledRequest, { nested: true })
 		} finally {
 			this.requests.setIsPrompting(false)
@@ -897,21 +907,28 @@ export class TldrawAgent {
 
 				for (const action of actions) {
 					const match = action.match(/^data: (.+)$/m)
-					if (match) {
-						try {
-							const data = JSON.parse(match[1])
+					if (!match) continue
 
-							// If the response contains an error, throw it
-							if ('error' in data) {
-								throw new Error(data.error)
-							}
-
-							const agentAction: Streaming<AgentAction> = data
-							yield agentAction
-						} catch (err: any) {
-							throw new Error(err.message)
-						}
+					let data: any
+					try {
+						data = JSON.parse(match[1])
+					} catch (err: any) {
+						// A single malformed chunk (e.g. split mid-line by a network
+						// hiccup) shouldn't take down the whole stream — skip it and
+						// keep consuming subsequent, well-formed chunks.
+						console.warn('Skipping malformed SSE chunk:', err, action)
+						continue
 					}
+
+					// The server explicitly reported a failure (not a parse issue on
+					// our end) — this is fatal to the stream, so propagate it as-is
+					// to preserve its message and stack.
+					if (data && typeof data === 'object' && 'error' in data) {
+						throw new Error(data.error)
+					}
+
+					const agentAction: Streaming<AgentAction> = data
+					yield agentAction
 				}
 			}
 		} finally {

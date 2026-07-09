@@ -1,4 +1,13 @@
-import { createContext, memo, ReactNode, useCallback, useContext, useEffect, useState } from 'react'
+import {
+	createContext,
+	memo,
+	ReactNode,
+	useCallback,
+	useContext,
+	useEffect,
+	useRef,
+	useState,
+} from 'react'
 import { useEditor, useToasts, useValue } from 'tldraw'
 import { TldrawAgent } from './TldrawAgent'
 import { TldrawAgentApp } from './TldrawAgentApp'
@@ -60,19 +69,28 @@ export const TldrawAgentAppProvider = memo(function TldrawAgentAppProvider({
 	const toasts = useToasts()
 	const [app, setApp] = useState<TldrawAgentApp | null>(null)
 
+	// Callback props are read through refs inside the effect below, so the
+	// agent-app system is only recreated when `editor` itself changes, not
+	// when a parent re-render happens to pass a new (but behaviorally
+	// identical) `onMount`/`onUnmount` reference — that used to dispose and
+	// rebuild the whole system, cancelling whatever was generating.
+	const toastsRef = useRef(toasts)
+	toastsRef.current = toasts
+	const onMountRef = useRef(onMount)
+	onMountRef.current = onMount
+	const onUnmountRef = useRef(onUnmount)
+	onUnmountRef.current = onUnmount
+
 	// Error handler for agent errors
-	const handleError = useCallback(
-		(e: any) => {
-			const message = typeof e === 'string' ? e : e instanceof Error && e.message
-			toasts.addToast({
-				title: 'Error',
-				description: message || 'An error occurred',
-				severity: 'error',
-			})
-			console.error(e)
-		},
-		[toasts]
-	)
+	const handleError = useCallback((e: any) => {
+		const message = typeof e === 'string' ? e : e instanceof Error && e.message
+		toastsRef.current.addToast({
+			title: 'Error',
+			description: message || 'An error occurred',
+			severity: 'error',
+		})
+		console.error(e)
+	}, [])
 
 	// Create the TldrawAgentApp instance
 	useEffect(() => {
@@ -90,7 +108,7 @@ export const TldrawAgentAppProvider = memo(function TldrawAgentAppProvider({
 		setApp(instance)
 
 		// Notify parent
-		onMount?.(instance)
+		onMountRef.current?.(instance)
 
 		// Expose to window for debugging
 		;(window as any).agentApp = instance
@@ -100,12 +118,12 @@ export const TldrawAgentAppProvider = memo(function TldrawAgentAppProvider({
 		return () => {
 			instance.dispose()
 			setApp(null)
-			onUnmount?.()
+			onUnmountRef.current?.()
 			delete (window as any).agentApp
 			delete (window as any).agent
 			delete (window as any).editor
 		}
-	}, [editor, handleError, onMount, onUnmount])
+	}, [editor, handleError])
 
 	// Don't render children until app exists
 	if (!app) {
