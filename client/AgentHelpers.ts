@@ -1,9 +1,37 @@
 import { BoxModel, createShapeId, Editor, TLShapeId, VecModel } from 'tldraw'
 import { FocusedFill, FocusedFillSchema } from '../shared/format/FocusedFill'
 import { FocusedShape } from '../shared/format/FocusedShape'
+import { convertTldrawIdToSimpleId } from '../shared/format/convertTldrawShapeToFocusedShape'
 import { ContextItem } from '../shared/types/ContextItem'
 import { SimpleShapeId } from '../shared/types/ids-schema'
 import { TldrawAgent } from './agent/TldrawAgent'
+
+/**
+ * The base of a simple shape id: the id with a single trailing `-<digits>`
+ * removed. `ensureShapeIdIsUnique` appends `-1`, `-2`, ... to de-collide ids at
+ * creation, so `tail` and `tail-1` share the base `tail`.
+ */
+export function baseShapeId(id: string): string {
+	return id.replace(/-\d+$/, '')
+}
+
+/**
+ * Resolve a requested shape id against a list of real shape ids by matching on
+ * base id, but only when exactly one real shape shares that base. Returns the
+ * matching real id, or null if there is no match or the match is ambiguous
+ * (two or more shapes share the base). Never guesses among ambiguous ids.
+ */
+export function resolveShapeIdByBase(
+	requestedId: string,
+	currentIds: string[]
+): SimpleShapeId | null {
+	const wantedBase = baseShapeId(requestedId)
+	const matches = currentIds.filter((existing) => baseShapeId(existing) === wantedBase)
+	if (matches.length === 1) {
+		return matches[0] as SimpleShapeId
+	}
+	return null
+}
 
 /**
  * This class contains handles the transformations that happen throughout a
@@ -302,6 +330,20 @@ export class AgentHelpers {
 		const existingShape = editor.getShape(createShapeId(id))
 		if (existingShape) {
 			return id
+		}
+
+		// Conservative fuzzy fallback: the model often references an id that was
+		// uniquified at creation (it asks for `tail`, the real shape is `tail-1`).
+		// Match by base id (the id with any trailing `-<digits>` removed) against
+		// the current page's shapes, but only resolve when exactly one shape
+		// shares that base, so an ambiguous request never silently retargets the
+		// wrong shape.
+		const currentIds = editor
+			.getCurrentPageShapes()
+			.map((shape) => convertTldrawIdToSimpleId(shape.id))
+		const resolved = resolveShapeIdByBase(id, currentIds)
+		if (resolved) {
+			return resolved
 		}
 
 		// Otherwise, give up

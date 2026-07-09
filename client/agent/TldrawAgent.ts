@@ -1,5 +1,8 @@
 import { Editor, RecordsDiff, reverseRecordsDiff, structuredClone, TLRecord, TLShapeId } from 'tldraw'
-import { convertTldrawShapeToFocusedShape } from '../../shared/format/convertTldrawShapeToFocusedShape'
+import {
+	convertTldrawIdToSimpleId,
+	convertTldrawShapeToFocusedShape,
+} from '../../shared/format/convertTldrawShapeToFocusedShape'
 import { AgentModelName } from '../../shared/models'
 import { AgentAction } from '../../shared/types/AgentAction'
 import { AgentInput } from '../../shared/types/AgentInput'
@@ -294,6 +297,15 @@ export class TldrawAgent {
 	private isActingOnEditor = false
 
 	/**
+	 * How many times this agent has been told, within the current dispatch, that
+	 * a shape action was dropped for an unresolved shapeId. Capped at 1: the
+	 * corrective follow-up fires at most once per dispatch, so a shape that
+	 * simply cannot be resolved can never drive an endless retry loop. Reset to
+	 * 0 whenever a fresh, externally-sourced request arrives (see `prompt`).
+	 */
+	shapeIdRetryCount = 0
+
+	/**
 	 * Get whether the agent is currently acting on the editor.
 	 * @returns true if the agent is currently acting, false otherwise.
 	 */
@@ -386,6 +398,16 @@ export class TldrawAgent {
 		// "generating" forever.
 		try {
 			const request = this.requests.getFullRequestFromInput(input)
+
+			// A fresh, externally-sourced request (a user prompt or a dispatch from
+			// the planner/coordinator) starts a new dispatch, so clear the
+			// shape-id retry budget. Self-sourced continuations within the same
+			// dispatch keep the existing count, so the corrective follow-up cannot
+			// re-arm itself and loop.
+			if (request.source !== 'self') {
+				this.shapeIdRetryCount = 0
+			}
+
 			const startingNode = this.mode.getCurrentModeNode()
 			startingNode.onPromptStart?.(this, request)
 
@@ -682,6 +704,10 @@ export class TldrawAgent {
 			let incompleteDiff: RecordsDiff<TLRecord> | null = null
 			const actionPromises: Promise<void>[] = []
 			let lastShapeBoundsForResting: { x: number; y: number; w: number; h: number } | null = null
+			// Complete actions dropped by sanitizeAction (an unresolvable shapeId).
+			// Collected so we can tell the model once, after the turn, that the
+			// edit did not land, instead of it silently vanishing.
+			const droppedShapeActions: Streaming<AgentAction>[] = []
 			try {
 				for await (const action of this.streamAgentActions({ prompt, signal })) {
 					if (cancelled) break
@@ -713,6 +739,11 @@ export class TldrawAgent {
 								// Sanitize the agent's action
 								const transformedAction = actionUtil.sanitizeAction(action, helpers)
 								if (!transformedAction) {
+									// A complete action whose shapeId could not be resolved is
+									// recorded so the model can be told once after the turn.
+									if (action.complete && actionTargetsShape(action)) {
+										droppedShapeActions.push(action)
+									}
 									return
 								}
 
@@ -778,6 +809,31 @@ export class TldrawAgent {
 				if (!cancelled && lastShapeBoundsForResting) {
 					const restingPos = getBeePositionFromBounds(lastShapeBoundsForResting, 'resting', editor.getZoomLevel())
 					this.requests.setBeePosition(restingPos)
+				}
+
+				// Shape edits were dropped for unresolved ids. Tell the model once
+				// per dispatch (naming the dropped actions and listing the real
+				// shape ids it can target), then let it retry. The hard cap of 1,
+				// reset only on a fresh external dispatch, is what stops this from
+				// looping the way the earlier unbounded version did.
+				if (
+					!cancelled &&
+					droppedShapeActions.length > 0 &&
+					this.shapeIdRetryCount < 1 &&
+					!this.requests.getScheduledRequest()
+				) {
+					const dropped = droppedShapeActions.map((a) => describeDroppedShapeAction(a)).join('\n')
+					const realIds = editor
+						.getCurrentPageShapes()
+						.map((shape) => convertTldrawIdToSimpleId(shape.id))
+						.join(', ')
+					this.shapeIdRetryCount = 1
+					this.schedule({
+						agentMessages: [
+							`Some of your edits were skipped because their shape IDs do not exist on the canvas, even if you described them as done:\n${dropped}\nThe real shape IDs currently on the canvas are: ${realIds}\nReissue those edits using IDs from that list. If a shape you wanted is not listed, it is not there to edit.`,
+						],
+						source: 'self',
+					})
 				}
 			} catch (e) {
 				if (e === 'Cancelled by user' || (e instanceof Error && e.name === 'AbortError')) {
@@ -857,4 +913,22 @@ export class TldrawAgent {
 			reader.releaseLock()
 		}
 	}
+}
+
+/** Whether an action targets an existing shape by id (so a miss is worth reporting). */
+function actionTargetsShape(action: Streaming<AgentAction>): boolean {
+	const anyAction = action as { shapeId?: unknown; shapeIds?: unknown }
+	return typeof anyAction.shapeId === 'string' || Array.isArray(anyAction.shapeIds)
+}
+
+/** One line naming a dropped action and the shape id(s) it failed to resolve. */
+function describeDroppedShapeAction(action: Streaming<AgentAction>): string {
+	const anyAction = action as { _type: string; shapeId?: string; shapeIds?: string[] }
+	const ids = anyAction.shapeId
+		? [anyAction.shapeId]
+		: Array.isArray(anyAction.shapeIds)
+			? anyAction.shapeIds
+			: []
+	const idText = ids.length > 0 ? ids.join(', ') : '(no shape id)'
+	return `- ${anyAction._type} targeting ${idText}`
 }

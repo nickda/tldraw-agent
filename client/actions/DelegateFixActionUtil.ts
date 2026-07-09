@@ -1,6 +1,8 @@
+import { Box } from 'tldraw'
 import { DelegateFixAction } from '../../shared/schema/AgentActionSchemas'
 import { TodoItem } from '../../shared/types/TodoItem'
 import { Streaming } from '../../shared/types/Streaming'
+import { convertTldrawIdToSimpleId } from '../../shared/format/convertTldrawShapeToFocusedShape'
 import { AgentAppAgentsManager } from '../agent/managers/AgentAppAgentsManager'
 import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
 import { AgentHelpers } from '../AgentHelpers'
@@ -47,6 +49,24 @@ export const DelegateFixActionUtil = registerActionUtil(
 			AgentAppPlanManager.$plan.set(this.editor, [...plan, fixItem])
 
 			if (executor) {
+				// List the real ids of the shapes inside the fix region so the
+				// executor edits by ids that actually exist, rather than by
+				// whatever id the Planner guessed at in `text`. This is what makes
+				// a cross-agent fix (editing a shape another executor drew) land
+				// instead of silently missing on a wrong id.
+				const box = Box.From(bounds)
+				const idsInRegion = this.editor
+					.getCurrentPageShapes()
+					.filter((shape) => {
+						const shapeBounds = this.editor.getShapePageBounds(shape)
+						return shapeBounds ? box.includes(shapeBounds) : false
+					})
+					.map((shape) => convertTldrawIdToSimpleId(shape.id))
+				const idsLine =
+					idsInRegion.length > 0
+						? `\n\nThe real shape IDs in this region are: ${idsInRegion.join(', ')}. Edit these by ID; do not invent IDs.`
+						: ''
+
 				executor.interrupt({
 					input: {
 						bounds,
@@ -55,7 +75,7 @@ export const DelegateFixActionUtil = registerActionUtil(
 
 ${action.text}
 
-Use move actions to reposition existing shapes, delete to remove wrong shapes, or create to add missing ones. Look at the screenshot to identify which shapes need to change. Do NOT redraw everything, only fix what's wrong.`,
+Use move actions to reposition existing shapes, delete to remove wrong shapes, or create to add missing ones. Look at the screenshot to identify which shapes need to change. Do NOT redraw everything, only fix what's wrong.${idsLine}`,
 						],
 						source: 'other-agent',
 					},
