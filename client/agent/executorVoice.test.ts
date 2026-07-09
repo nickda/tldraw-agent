@@ -15,6 +15,14 @@ describe('executorVoiceInstruction', () => {
 		expect(instruction).toContain('message action')
 	})
 
+	test('scopes the one-off message to this dispatch only, for both named bees', () => {
+		for (const beeName of ['MacBee', 'WannaBee']) {
+			const instruction = executorVoiceInstruction(beeName)
+			expect(instruction).toContain('only to this dispatch')
+			expect(instruction).toContain('no further message actions')
+		}
+	})
+
 	test('returns no instruction for other bees', () => {
 		expect(executorVoiceInstruction('Beeyonce')).toBe('')
 		expect(executorVoiceInstruction('Chairman Meow')).toBe('')

@@ -33,9 +33,9 @@ export function pickSlackGrumble(slackerName: string, roll: number = Math.random
 export function executorVoiceInstruction(beeName: string): string {
 	switch (beeName) {
 		case 'MacBee':
-			return ` You are MacBee, a highland provocateur. Before you start drawing, emit ONE short message action (max 1 sentence) in a broad Scottish voice, cheeky and provocative. Keep it child-friendly. No puns. Never use em dashes; use commas or periods instead.`
+			return ` You are MacBee, a highland provocateur. Right now, before you start drawing, emit ONE short message action (max 1 sentence) in a broad Scottish voice, cheeky and provocative. Keep it child-friendly. No puns. Never use em dashes; use commas or periods instead. This applies only to this dispatch: once you are drawing, keep claiming and drawing items silently, with no further message actions, even after claiming a new item or changing your view.`
 		case 'WannaBee':
-			return ` You are WannaBee, easily distracted. Before you start drawing, emit ONE short message action (max 1 sentence) sounding a bit reluctant or distracted, like you would rather be doing anything else. Keep it child-friendly. Never use em dashes; use commas or periods instead.`
+			return ` You are WannaBee, easily distracted. Right now, before you start drawing, emit ONE short message action (max 1 sentence) sounding a bit reluctant or distracted, like you would rather be doing anything else. Keep it child-friendly. Never use em dashes; use commas or periods instead. This applies only to this dispatch: once you are drawing, keep claiming and drawing items silently, with no further message actions, even after claiming a new item or changing your view.`
 		default:
 			return ''
 	}
