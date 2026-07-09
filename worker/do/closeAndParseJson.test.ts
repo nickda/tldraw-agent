@@ -1,5 +1,37 @@
 import { describe, expect, test } from 'bun:test'
-import { closeAndParseJson } from './closeAndParseJson'
+import { closeAndParseJson, extractActionsFromBuffer } from './closeAndParseJson'
+
+describe('extractActionsFromBuffer', () => {
+	test('returns the actions array from a normal envelope', () => {
+		const actions = extractActionsFromBuffer('{"actions": [{"_type": "create"}, {"_type": "move"}]}')
+		expect(actions).toEqual([{ _type: 'create' }, { _type: 'move' }])
+	})
+
+	test('salvages bare [ACTION]: objects with no envelope', () => {
+		const buffer =
+			'MacBee carves the worm, WannaBee adds fur.\n\n[ACTION]: {"_type": "writePlan", "items": []}[ACTION]: {"_type": "dispatchExecutors"}'
+		const actions = extractActionsFromBuffer(buffer)
+		expect(actions).toEqual([{ _type: 'writePlan', items: [] }, { _type: 'dispatchExecutors' }])
+	})
+
+	test('salvages a single trailing [ACTION]: object that is still incomplete', () => {
+		const buffer = 'some prose\n\n[ACTION]: {"_type": "message", "text": "hello'
+		const actions = extractActionsFromBuffer(buffer)
+		expect(actions).toEqual([{ _type: 'message', text: 'hello' }])
+	})
+
+	test('prefers the real envelope even when [ACTION]: appears inside it', () => {
+		// A message action whose text happens to mention the marker must not
+		// trigger the salvage path; the envelope wins.
+		const buffer = '{"actions": [{"_type": "message", "text": "I saw [ACTION]: in the logs"}]}'
+		const actions = extractActionsFromBuffer(buffer)
+		expect(actions).toEqual([{ _type: 'message', text: 'I saw [ACTION]: in the logs' }])
+	})
+
+	test('returns null when there is neither an envelope nor a marker', () => {
+		expect(extractActionsFromBuffer('just some prose, no json at all')).toBeNull()
+	})
+})
 
 describe('closeAndParseJson', () => {
 	test('parses complete JSON', () => {

@@ -20,6 +20,43 @@ export function closeAndParseJson(string: string) {
 	}
 }
 
+/**
+ * Extract the list of action objects from a (possibly partial) response buffer.
+ *
+ * The happy path is a single `{"actions": [ ... ]}` envelope. But a model
+ * without assistant prefill (e.g. Bedrock Claude) sometimes echoes the
+ * chat-history rendering format instead, emitting prose followed by one or
+ * more bare `[ACTION]: { ... }` objects with no enclosing envelope. That parses
+ * to an object with no `actions` array, so every action is silently dropped and
+ * nothing gets drawn. This salvages that case: when the normal envelope is
+ * missing, split on the `[ACTION]:` marker and parse each fragment as its own
+ * action object, returning them as an array. Returns null when nothing usable
+ * is found so callers can keep buffering.
+ */
+export function extractActionsFromBuffer(buffer: string): unknown[] | null {
+	const parsed = closeAndParseJson(buffer)
+	if (parsed && Array.isArray((parsed as { actions?: unknown }).actions)) {
+		return (parsed as { actions: unknown[] }).actions
+	}
+
+	// No `{"actions": [...]}` envelope. Fall back to the `[ACTION]:` marker the
+	// model borrowed from the chat-history format.
+	const marker = '[ACTION]:'
+	if (!buffer.includes(marker)) return null
+
+	const salvaged: unknown[] = []
+	const fragments = buffer.split(marker)
+	// fragments[0] is whatever preceded the first marker (prose); skip it.
+	for (let i = 1; i < fragments.length; i++) {
+		const action = closeAndParseJson(fragments[i])
+		if (action && typeof action === 'object' && '_type' in (action as object)) {
+			salvaged.push(action)
+		}
+	}
+
+	return salvaged.length > 0 ? salvaged : null
+}
+
 function parseFromOpeningBrace(string: string) {
 	const stackOfOpenings = []
 

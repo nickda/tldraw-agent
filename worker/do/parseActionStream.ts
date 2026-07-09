@@ -1,6 +1,6 @@
 import { AgentAction } from '../../shared/types/AgentAction'
 import { Streaming } from '../../shared/types/Streaming'
-import { closeAndParseJson } from './closeAndParseJson'
+import { extractActionsFromBuffer } from './closeAndParseJson'
 
 /**
  * Consume a stream of raw text chunks (as emitted by the model) and yield each
@@ -31,11 +31,8 @@ export async function* parseActionStream(
 	for await (const text of textStream) {
 		buffer += text
 
-		const partialObject = closeAndParseJson(buffer)
-		if (!partialObject) continue
-
-		const actions = partialObject.actions
-		if (!Array.isArray(actions)) continue
+		const actions = extractActionsFromBuffer(buffer)
+		if (!actions) continue
 		if (actions.length === 0) continue
 
 		// If the events list is ahead of the cursor, we know we've completed one or
