@@ -33,146 +33,126 @@ export function ContextHighlights({ agent }: { agent: TldrawAgent }) {
 	const activeRequest = useValue('activeRequest', () => agent.requests.getActiveRequest(), [agent])
 	const activeContextItems = activeRequest?.contextItems ?? []
 
-	const selectedAreas: AreaHighlightProps[] = useValue(
-		'selectedAreas',
-		() => {
-			const selectedAreaItems = selectedContextItems.filter((item) => item.type === 'area')
-			return selectedAreaItems.map((item) => {
+	// These are pure derivations of the already-reactive selectedContextItems /
+	// activeContextItems, so plain useMemo is enough; wrapping each in its own
+	// useValue re-registered four extra signal subscriptions per render for no
+	// benefit, since selectedContextItems is itself a fresh array on every change.
+	const selectedAreas: AreaHighlightProps[] = useMemo(() => {
+		const selectedAreaItems = selectedContextItems.filter((item) => item.type === 'area')
+		return selectedAreaItems.map((item) => {
+			return {
+				key: `area-${item.bounds.x}-${item.bounds.y}-${item.bounds.w}-${item.bounds.h}`,
+				pageBounds: item.bounds,
+				generating: false,
+				color: 'var(--tl-color-selected)',
+			}
+		})
+	}, [selectedContextItems])
+
+	const activeAreas: AreaHighlightProps[] = useMemo(() => {
+		const activeAreaItems = activeContextItems.filter((item) => item.type === 'area')
+		return activeAreaItems.map((item) => {
+			return {
+				key: `area-${item.bounds.x}-${item.bounds.y}-${item.bounds.w}-${item.bounds.h}`,
+				pageBounds: item.bounds,
+				generating: true,
+				color: 'var(--tl-color-selected)',
+				label: item.source === 'agent' ? 'Reviewing' : undefined,
+			}
+		})
+	}, [activeContextItems])
+
+	const selectedShapes: AreaHighlightProps[] = useMemo(() => {
+		const selectedShapeItems = selectedContextItems.filter((item) => item.type === 'shapes')
+		return selectedShapeItems
+			.map((item) => {
+				const bounds = editor.getShapesPageBounds(
+					item.shapes.map((shape) => `shape:${shape.shapeId}` as TLShapeId)
+				)
+				if (!bounds) return null
 				return {
-					pageBounds: item.bounds,
+					key: `shapes-${item.shapes.map((shape) => shape.shapeId).join(',')}`,
+					pageBounds: bounds,
 					generating: false,
 					color: 'var(--tl-color-selected)',
 				}
 			})
-		},
-		[selectedContextItems]
-	)
+			.filter((highlight) => highlight !== null)
+	}, [selectedContextItems, editor])
 
-	const activeAreas: AreaHighlightProps[] = useValue(
-		'activeAreas',
-		() => {
-			const activeAreaItems = activeContextItems.filter((item) => item.type === 'area')
-			return activeAreaItems.map((item) => {
+	const activeShapes: AreaHighlightProps[] = useMemo(() => {
+		const activeShapeItems = activeContextItems.filter((item) => item.type === 'shapes')
+		return activeShapeItems
+			.map((item) => {
+				const bounds = editor.getShapesPageBounds(
+					item.shapes.map((shape) => `shape:${shape.shapeId}` as TLShapeId)
+				)
+				if (!bounds) return null
 				return {
-					pageBounds: item.bounds,
+					key: `shapes-${item.shapes.map((shape) => shape.shapeId).join(',')}`,
+					pageBounds: bounds,
 					generating: true,
 					color: 'var(--tl-color-selected)',
-					label: item.source === 'agent' ? 'Reviewing' : undefined,
 				}
 			})
-		},
-		[activeContextItems]
-	)
+			.filter((highlight) => highlight !== null)
+	}, [activeContextItems, editor])
 
-	const selectedShapes: AreaHighlightProps[] = useValue(
-		'selectedShapes',
-		() => {
-			const selectedShapeItems = selectedContextItems.filter((item) => item.type === 'shapes')
-			return selectedShapeItems
-				.map((item) => {
-					const bounds = editor.getShapesPageBounds(
-						item.shapes.map((shape) => `shape:${shape.shapeId}` as TLShapeId)
-					)
-					if (!bounds) return null
-					return {
-						pageBounds: bounds,
-						generating: false,
-						color: 'var(--tl-color-selected)',
-					}
-				})
-				.filter((highlight) => highlight !== null)
-		},
-		[selectedContextItems, editor]
-	)
-
-	const activeShapes: AreaHighlightProps[] = useValue(
-		'activeShapes',
-		() => {
-			const activeShapeItems = activeContextItems.filter((item) => item.type === 'shapes')
-			return activeShapeItems
-				.map((item) => {
-					const bounds = editor.getShapesPageBounds(
-						item.shapes.map((shape) => `shape:${shape.shapeId}` as TLShapeId)
-					)
-					if (!bounds) return null
-					return {
-						pageBounds: bounds,
-						generating: true,
-						color: 'var(--tl-color-selected)',
-					}
-				})
-				.filter((highlight) => highlight !== null)
-		},
-		[activeContextItems, editor]
-	)
-
-	const selectedShapesAreas: AreaHighlightProps[] = useValue(
-		'selectedShapesAreas',
-		() => {
-			const selectedShapeItems = selectedContextItems.filter((item) => item.type === 'shape')
-			return selectedShapeItems
-				.map((item) => {
-					const bounds = editor.getShapePageBounds(`shape:${item.shape.shapeId}` as TLShapeId)
-					if (!bounds) return null
-					return {
-						pageBounds: bounds,
-						generating: false,
-						color: 'var(--tl-color-selected)',
-					}
-				})
-				.filter((highlight) => highlight !== null)
-		},
-		[selectedContextItems, editor]
-	)
-
-	const activeShapeAreas: AreaHighlightProps[] = useValue(
-		'activeShapeAreas',
-		() => {
-			const activeShapeItems = activeContextItems.filter((item) => item.type === 'shape')
-			return activeShapeItems
-				.map((item) => {
-					const bounds = editor.getShapePageBounds(`shape:${item.shape.shapeId}` as TLShapeId)
-					if (!bounds) return null
-					return {
-						pageBounds: bounds,
-						generating: true,
-						color: 'var(--tl-color-selected)',
-					}
-				})
-				.filter((highlight) => highlight !== null)
-		},
-		[activeContextItems, editor]
-	)
-
-	const selectedPoints: PointHighlightProps[] = useValue(
-		'selectedPoints',
-		() => {
-			const selectedPointItems = selectedContextItems.filter((item) => item.type === 'point')
-			return selectedPointItems.map((item) => {
+	const selectedShapesAreas: AreaHighlightProps[] = useMemo(() => {
+		const selectedShapeItems = selectedContextItems.filter((item) => item.type === 'shape')
+		return selectedShapeItems
+			.map((item) => {
+				const bounds = editor.getShapePageBounds(`shape:${item.shape.shapeId}` as TLShapeId)
+				if (!bounds) return null
 				return {
-					pagePoint: item.point,
+					key: `shape-${item.shape.shapeId}`,
+					pageBounds: bounds,
 					generating: false,
 					color: 'var(--tl-color-selected)',
 				}
 			})
-		},
-		[selectedContextItems]
-	)
+			.filter((highlight) => highlight !== null)
+	}, [selectedContextItems, editor])
 
-	const activePoints: PointHighlightProps[] = useValue(
-		'activePoints',
-		() => {
-			const activePointItems = activeContextItems.filter((item) => item.type === 'point')
-			return activePointItems.map((item) => {
+	const activeShapeAreas: AreaHighlightProps[] = useMemo(() => {
+		const activeShapeItems = activeContextItems.filter((item) => item.type === 'shape')
+		return activeShapeItems
+			.map((item) => {
+				const bounds = editor.getShapePageBounds(`shape:${item.shape.shapeId}` as TLShapeId)
+				if (!bounds) return null
 				return {
-					pagePoint: item.point,
+					key: `shape-${item.shape.shapeId}`,
+					pageBounds: bounds,
 					generating: true,
 					color: 'var(--tl-color-selected)',
 				}
 			})
-		},
-		[activeContextItems]
-	)
+			.filter((highlight) => highlight !== null)
+	}, [activeContextItems, editor])
+
+	const selectedPoints: PointHighlightProps[] = useMemo(() => {
+		const selectedPointItems = selectedContextItems.filter((item) => item.type === 'point')
+		return selectedPointItems.map((item) => {
+			return {
+				key: `point-${item.point.x}-${item.point.y}`,
+				pagePoint: item.point,
+				generating: false,
+				color: 'var(--tl-color-selected)',
+			}
+		})
+	}, [selectedContextItems])
+
+	const activePoints: PointHighlightProps[] = useMemo(() => {
+		const activePointItems = activeContextItems.filter((item) => item.type === 'point')
+		return activePointItems.map((item) => {
+			return {
+				key: `point-${item.point.x}-${item.point.y}`,
+				pagePoint: item.point,
+				generating: true,
+				color: 'var(--tl-color-selected)',
+			}
+		})
+	}, [activeContextItems])
 
 	const allAreaHighlights = useMemo(
 		() => [
@@ -200,9 +180,9 @@ export function ContextHighlights({ agent }: { agent: TldrawAgent }) {
 
 	return (
 		<>
-			{allAreaHighlights.map((highlight, i) => (
+			{allAreaHighlights.map((highlight) => (
 				<AreaHighlight
-					key={'context-highlight-' + i}
+					key={highlight.key}
 					pageBounds={highlight.pageBounds}
 					color={highlight.color}
 					generating={highlight.generating}
@@ -210,9 +190,9 @@ export function ContextHighlights({ agent }: { agent: TldrawAgent }) {
 				/>
 			))}
 
-			{allPointsHighlights.map((highlight, i) => (
+			{allPointsHighlights.map((highlight) => (
 				<PointHighlight
-					key={'context-point-' + i}
+					key={highlight.key}
 					pagePoint={highlight.pagePoint}
 					color={highlight.color}
 					generating={highlight.generating}

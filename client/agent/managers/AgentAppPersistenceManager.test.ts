@@ -121,6 +121,54 @@ describe('AgentAppPersistenceManager: debounced auto-save', () => {
 	})
 })
 
+describe('AgentAppPersistenceManager: save/load round-trip', () => {
+	test('state saved for one agent loads back into a freshly created agent with the same id', () => {
+		const fakeStorage = makeFakeLocalStorage()
+		const originalLocalStorage = globalThis.localStorage
+		;(globalThis as any).localStorage = fakeStorage
+
+		try {
+			const savingAgent = makeFakeAgent('agent-1', 3)
+			const savingApp = makeApp([savingAgent])
+			const savingManager = new AgentAppPersistenceManager(savingApp)
+			savingManager.startAutoSave()
+			savingManager.dispose() // flushes a synchronous save
+
+			// A second, independent manager simulates a fresh page load: a newly
+			// created agent (empty history) that should pick up the persisted state.
+			const loadedAgent = makeFakeAgent('agent-1', 0)
+			const loadingApp = makeApp([loadedAgent])
+			const loadingManager = new AgentAppPersistenceManager(loadingApp)
+			loadingManager.loadState()
+
+			expect(loadedAgent.loadState).toHaveBeenCalledTimes(1)
+			const loadedState = loadedAgent.loadState.mock.calls[0][0]
+			expect(loadedState.chatHistory).toEqual(savingAgent.serializeState().chatHistory)
+		} finally {
+			;(globalThis as any).localStorage = originalLocalStorage
+		}
+	})
+
+	test('loadState is a no-op when nothing was ever saved', () => {
+		const fakeStorage = makeFakeLocalStorage()
+		const originalLocalStorage = globalThis.localStorage
+		;(globalThis as any).localStorage = fakeStorage
+
+		try {
+			const agent = makeFakeAgent('agent-1')
+			const app = makeApp([agent])
+			const manager = new AgentAppPersistenceManager(app)
+
+			manager.loadState()
+
+			expect(agent.loadState).not.toHaveBeenCalled()
+			expect(manager.getIsLoadingState()).toBe(false)
+		} finally {
+			;(globalThis as any).localStorage = originalLocalStorage
+		}
+	})
+})
+
 describe('AgentAppPersistenceManager: failed save is not a silent no-op', () => {
 	test('a save that throws (e.g. quota exceeded) is routed to onError, not just console.warn', () => {
 		const fakeStorage = makeFakeLocalStorage({ throwOnSet: true })

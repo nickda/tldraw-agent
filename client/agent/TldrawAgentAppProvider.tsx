@@ -82,7 +82,7 @@ export const TldrawAgentAppProvider = memo(function TldrawAgentAppProvider({
 	onUnmountRef.current = onUnmount
 
 	// Error handler for agent errors
-	const handleError = useCallback((e: any) => {
+	const handleError = useCallback((e: unknown) => {
 		const message = typeof e === 'string' ? e : e instanceof Error && e.message
 		toastsRef.current.addToast({
 			title: 'Error',

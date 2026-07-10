@@ -66,7 +66,7 @@ export class TldrawAgentApp {
 	constructor(
 		editor: Editor,
 		public options: {
-			onError: (e: any) => void
+			onError: (e: unknown) => void
 		}
 	) {
 		this._editor = editor

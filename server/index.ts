@@ -1,11 +1,13 @@
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
+import { DebugPart } from '../shared/schema/PromptPartDefinitions'
 import { AgentPrompt } from '../shared/types/AgentPrompt'
-import { AgentModelName, isValidModelName, getAgentModelDefinition } from '../shared/models'
+import { AgentModelName } from '../shared/models'
 import { AgentService } from '../worker/do/AgentService'
 import { createSSEStreamResponse } from '../worker/do/createSSEStreamResponse'
 import { ModelEnvironment } from '../worker/environment'
+import { resolveBackendModel, resolveBedrockModel } from './resolveBackendModel'
 
 // Node backend for the local-model path. Reuses AgentService unchanged; it is
 // the same core the Cloudflare Durable Object runs, so geometry-class fixes land
@@ -42,20 +44,7 @@ const AGENT_BACKEND = process.env.AGENT_BACKEND === 'bedrock' ? 'bedrock' : 'loc
 
 // Which Bedrock model the 'bedrock' backend pins every prompt to. Override with
 // AGENT_BEDROCK_MODEL (must be a defined `bedrock-*` model name).
-const BEDROCK_MODEL: AgentModelName = (() => {
-	const requested = process.env.AGENT_BEDROCK_MODEL
-	if (isValidModelName(requested) && getAgentModelDefinition(requested).provider === 'bedrock') {
-		return requested
-	}
-	return 'bedrock-claude-sonnet-4-6'
-})()
-
-// Whether the client's selected model is allowed through unchanged in 'local'
-// mode. Bedrock selections run as-is; everything else collapses to `local`.
-function isPassthroughModel(modelName: string | undefined): boolean {
-	if (!isValidModelName(modelName)) return false
-	return getAgentModelDefinition(modelName).provider === 'bedrock'
-}
+const BEDROCK_MODEL: AgentModelName = resolveBedrockModel(process.env.AGENT_BEDROCK_MODEL)
 
 const service = new AgentService(env)
 
@@ -63,19 +52,25 @@ const app = new Hono()
 
 app.post('/stream', async (c) => {
 	const prompt = (await c.req.json()) as AgentPrompt
-	const agentMsgs = (prompt as any).messages?.agentMessages
-	console.log('[STREAM] mode:', prompt.mode?.modeType, 'actions:', prompt.mode?.actionTypes?.length,
-		agentMsgs ? `msg: "${(agentMsgs[0] || '').slice(0, 100)}"` : '')
+
+	// Gated the same way as the Worker-side debug logging (AgentService), so a
+	// per-request message snippet isn't logged unconditionally in local dev.
+	const debugPart = prompt.debug as DebugPart | undefined
+	if (debugPart?.logMessages) {
+		const agentMsgs = (prompt as any).messages?.agentMessages
+		console.log('[STREAM] mode:', prompt.mode?.modeType, 'actions:', prompt.mode?.actionTypes?.length,
+			agentMsgs ? `msg: "${(agentMsgs[0] || '').slice(0, 100)}"` : '')
+	}
 
 	// Pin the model per backend mode. In 'bedrock' mode every prompt runs on the
 	// chosen Bedrock model. In 'local' mode force `local` unless the client picked
 	// a passthrough (bedrock) model.
 	if (prompt.modelName) {
-		if (AGENT_BACKEND === 'bedrock') {
-			prompt.modelName.modelName = BEDROCK_MODEL
-		} else if (!isPassthroughModel(prompt.modelName.modelName)) {
-			prompt.modelName.modelName = 'local'
-		}
+		prompt.modelName.modelName = resolveBackendModel(
+			AGENT_BACKEND,
+			BEDROCK_MODEL,
+			prompt.modelName.modelName
+		)
 	}
 
 	return createSSEStreamResponse((signal) => service.stream(prompt, signal))

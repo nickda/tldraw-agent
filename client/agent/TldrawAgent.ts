@@ -82,7 +82,7 @@ export interface TldrawAgentOptions {
 	/** A key used to differentiate the agent from other agents. */
 	id: string
 	/** A callback for when an error occurs. */
-	onError: (e: any) => void
+	onError: (e: unknown) => void
 	/** The agent's Team Mode role. Defaults to `solo`. */
 	role?: AgentRole
 	/** The agent's whimsical Bee name. Generated if not provided. */
@@ -122,7 +122,7 @@ export class TldrawAgent {
 	beeColor: string
 
 	/** A callback for when an error occurs. */
-	onError: (e: any) => void
+	onError: (e: unknown) => void
 
 	// ==================== Managers ====================
 

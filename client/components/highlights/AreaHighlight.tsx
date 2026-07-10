@@ -1,6 +1,7 @@
 import { Box, BoxModel, SVGContainer, useValue } from 'tldraw'
 
 export interface AreaHighlightProps {
+	key: string
 	pageBounds: BoxModel
 	generating: boolean
 	color: string

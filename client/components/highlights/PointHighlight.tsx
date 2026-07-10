@@ -1,6 +1,7 @@
 import { SVGContainer, useEditor, useValue, VecModel } from 'tldraw'
 
 export interface PointHighlightProps {
+	key: string
 	pagePoint: VecModel
 	color: string
 	generating: boolean

@@ -72,7 +72,7 @@ export class AgentTodoManager extends BaseAgentManager {
 	 * Update a todo item's status and optionally its text.
 	 * @param params - The update parameters
 	 */
-	update(params: { id: number; status: TodoItem['status']; text?: string }) {
+	update(params: { id: TodoId; status: TodoItem['status']; text?: string }) {
 		const { id, status, text } = params
 		this.$todoList.update((todoItems) => {
 			const index = todoItems.findIndex((item) => item.id === id)
@@ -91,7 +91,7 @@ export class AgentTodoManager extends BaseAgentManager {
 	 * Delete specific todo items by their ids.
 	 * @param ids - The ids of the todos to delete
 	 */
-	delete(ids: number[]) {
+	delete(ids: TodoId[]) {
 		const idsSet = new Set(ids)
 		this.$todoList.update((todoItems) => {
 			return todoItems.filter((item) => !idsSet.has(item.id))

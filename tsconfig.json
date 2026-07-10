@@ -1,4 +1,10 @@
 {
+	// One project spans both browser (client, `lib: DOM`) and server (worker, node)
+	// code, so `types` mixes Workers + Node globals with DOM lib types. The
+	// resulting name collisions (e.g. `fetch`, `Request`) are masked by
+	// skipLibCheck below rather than resolved via separate per-target configs.
+	// A full split is a larger effort tracked in issue #56; left as a single
+	// project for now.
 	"compilerOptions": {
 		"outDir": "./.tsbuild",
 		"types": ["@cloudflare/workers-types", "node"],

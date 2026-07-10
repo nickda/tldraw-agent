@@ -26,11 +26,13 @@ export function resolveShapeIdByBase(
 	currentIds: string[]
 ): SimpleShapeId | null {
 	const wantedBase = baseShapeId(requestedId)
-	const matches = currentIds.filter((existing) => baseShapeId(existing) === wantedBase)
-	if (matches.length === 1) {
-		return matches[0] as SimpleShapeId
+	let match: string | null = null
+	for (const existing of currentIds) {
+		if (baseShapeId(existing) !== wantedBase) continue
+		if (match !== null) return null // ambiguous: two or more shapes share the base
+		match = existing
 	}
-	return null
+	return match as SimpleShapeId | null
 }
 
 /**
@@ -290,7 +292,8 @@ export class AgentHelpers {
 		// todo: remove default and have a better handling of cases where id is undefined
 
 		const { editor } = this.agent
-		// Defensively strip the prefix in case the model incorrectly includes it
+		// Defensively strip the "shape:" prefix in case the model incorrectly includes it
+		id = id.replace(/^shape:/, '') as SimpleShapeId
 
 		// Ensure the id is unique by incrementing a number at the end
 		let newId = id
@@ -319,6 +322,13 @@ export class AgentHelpers {
 	 */
 	ensureShapeIdExists(id: SimpleShapeId): SimpleShapeId | null {
 		const { editor } = this.agent
+
+		// Defensively strip the "shape:" prefix in case the model incorrectly
+		// includes it, matching ensureShapeIdIsUnique. Without this, a prefixed id
+		// misses the shapeIdMap (keyed by the unprefixed id) and double-prefixes
+		// when looked up on the editor (`shape:shape:xxx`), silently failing to
+		// resolve a shape that actually exists.
+		id = id.replace(/^shape:/, '') as SimpleShapeId
 
 		// If there's already a transformed ID, use that
 		const existingId = this.shapeIdMap.get(id)
@@ -445,7 +455,7 @@ export class AgentHelpers {
 	unroundAndRestoreNumber(number: number, key: string): number {
 		const diff = this.roundingDiffMap.get(key)
 		if (diff === undefined) return number
-		return number + diff
+		return number - diff
 	}
 
 	/**
@@ -477,7 +487,7 @@ export class AgentHelpers {
 		const key = `${shape.shapeId}_${property as string}`
 		const diff = this.roundingDiffMap.get(key)
 		if (diff === undefined) return shape
-		;(shape[property] as number) += diff
+		;(shape[property] as number) -= diff
 		return shape
 	}
 
@@ -533,7 +543,7 @@ export class AgentHelpers {
 		}
 
 		if (typeof value === 'string') {
-			return value !== 'false'
+			return !['false', 'no', '0', ''].includes(value.toLowerCase())
 		}
 
 		return null
@@ -556,19 +566,21 @@ export class AgentHelpers {
 	 * Round the corners of a box.
 	 */
 	roundBox(boxModel: BoxModel): BoxModel {
-		boxModel.x = Math.round(boxModel.x)
-		boxModel.y = Math.round(boxModel.y)
-		boxModel.w = Math.round(boxModel.w)
-		boxModel.h = Math.round(boxModel.h)
-		return boxModel
+		return {
+			x: Math.round(boxModel.x),
+			y: Math.round(boxModel.y),
+			w: Math.round(boxModel.w),
+			h: Math.round(boxModel.h),
+		}
 	}
 
 	/**
 	 * Round the numbers of a vector.
 	 */
 	roundVec(vecModel: VecModel): VecModel {
-		vecModel.x = Math.round(vecModel.x)
-		vecModel.y = Math.round(vecModel.y)
-		return vecModel
+		return {
+			x: Math.round(vecModel.x),
+			y: Math.round(vecModel.y),
+		}
 	}
 }

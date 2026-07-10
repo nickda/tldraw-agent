@@ -1,6 +1,9 @@
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
 export type AgentModelProvider = 'openai' | 'anthropic' | 'google' | 'local' | 'bedrock'
 
+// Fallback output-token cap for models with no explicit `maxOutputTokens`.
+export const DEFAULT_MAX_OUTPUT_TOKENS = 65536
+
 export interface AgentModelDefinition {
 	name: AgentModelName
 	id: string
@@ -11,6 +14,10 @@ export interface AgentModelDefinition {
 
 	// Whether this model supports assistant message prefill (ending messages with an assistant turn)
 	supportsPrefill?: boolean
+
+	// Overrides DEFAULT_MAX_OUTPUT_TOKENS for models with a lower cap, so the
+	// request truncates gracefully rather than hard-failing against the model's limit.
+	maxOutputTokens?: number
 }
 
 export const AGENT_MODEL_DEFINITIONS = {
@@ -82,12 +89,15 @@ export const AGENT_MODEL_DEFINITIONS = {
 	// Local model served by koboldcpp over its OpenAI-compatible endpoint.
 	// `id` is a don't-care: koboldcpp serves whatever GGUF is loaded and reports
 	// its own model id back. Prefill is off; small local models do not handle an
-	// assistant-prefill turn reliably.
+	// assistant-prefill turn reliably. maxOutputTokens is capped well below the
+	// default: the documented --contextsize is 16384 total (prompt + output), so
+	// requesting the 65536 default would always exceed the context window.
 	local: {
 		name: 'local',
 		id: 'local',
 		provider: 'local',
 		supportsPrefill: false,
+		maxOutputTokens: 4096,
 	},
 } as const
 

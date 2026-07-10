@@ -3,7 +3,7 @@ import { AnthropicProvider, createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI, GoogleGenerativeAIProvider } from '@ai-sdk/google'
 import { createOpenAI, OpenAIProvider } from '@ai-sdk/openai'
 import { LanguageModel, streamText } from 'ai'
-import { AgentModelName, getAgentModelDefinition, isValidModelName } from '../../shared/models'
+import { AgentModelName, DEFAULT_MAX_OUTPUT_TOKENS, getAgentModelDefinition, isValidModelName } from '../../shared/models'
 import { DebugPart } from '../../shared/schema/PromptPartDefinitions'
 import { AgentAction } from '../../shared/types/AgentAction'
 import { AgentPrompt } from '../../shared/types/AgentPrompt'
@@ -101,20 +101,6 @@ export class AgentService {
 		prompt: AgentPrompt,
 		signal?: AbortSignal
 	): AsyncGenerator<Streaming<AgentAction>> {
-		try {
-			for await (const event of this.streamActions(prompt, signal)) {
-				yield event
-			}
-		} catch (error: any) {
-			console.error('Stream error:', error)
-			throw error
-		}
-	}
-
-	private async *streamActions(
-		prompt: AgentPrompt,
-		signal?: AbortSignal
-	): AsyncGenerator<Streaming<AgentAction>> {
 		const requestStartTime = Date.now()
 		const modelName = getModelName(prompt)
 		let model = this.getModel(modelName)
@@ -165,56 +151,54 @@ export class AgentService {
 			}
 		}
 
-		try {
-			// `onError` is log-only in the AI SDK: errors are not surfaced through
-			// `textStream`, so capture here and re-throw after the consume loop.
-			let streamError: unknown = null
-			const result = streamText({
-				model,
-				messages,
-				maxOutputTokens: 65536,
-				...(modelDefinition.provider === 'bedrock' ? {} : { temperature: 0 }),
-				providerOptions,
-				abortSignal: signal,
-				onAbort() {
-					console.warn('Stream actions aborted')
-				},
-				onError: (e) => {
-					console.error('Stream text error:', e)
-					streamError = e
-				},
-				onFinish: ({ finishReason, usage }) => {
-					const elapsedMs = Date.now() - requestStartTime
-					console.log(`[STREAM] finished: reason=${finishReason} tokens=${usage?.totalTokens ?? '?'} (in=${usage?.inputTokens ?? '?'} out=${usage?.outputTokens ?? '?'}) elapsedMs=${elapsedMs}`)
-				},
-			})
-			const { textStream } = result
+		// `onError` is log-only in the AI SDK: errors are not surfaced through
+		// `textStream`, so capture here and re-throw after the consume loop. The
+		// caller (createSSEStreamResponse) is the single place that logs and
+		// reports a thrown error to the client; this method just lets it propagate.
+		let streamError: unknown = null
+		const result = streamText({
+			model,
+			messages,
+			maxOutputTokens: modelDefinition.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+			// Bedrock's Converse API rejects `temperature` for newer Claude models
+			// (400 "temperature is deprecated"), so omit it for that provider only.
+			...(modelDefinition.provider === 'bedrock' ? {} : { temperature: 0 }),
+			providerOptions,
+			abortSignal: signal,
+			onAbort() {
+				console.warn('Stream actions aborted')
+			},
+			onError: (e) => {
+				streamError = e
+			},
+			onFinish: ({ finishReason, usage }) => {
+				const elapsedMs = Date.now() - requestStartTime
+				console.log(`[STREAM] finished: reason=${finishReason} tokens=${usage?.totalTokens ?? '?'} (in=${usage?.inputTokens ?? '?'} out=${usage?.outputTokens ?? '?'}) elapsedMs=${elapsedMs}`)
+			},
+		})
+		const { textStream } = result
 
-			const initialBuffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
-			const parser = parseActionStream(textStream, initialBuffer, () => streamError !== null)
-			let finalState: { buffer: string; cursor: number } | undefined
-			while (true) {
-				const { value, done } = await parser.next()
-				if (done) {
-					finalState = value
-					break
-				}
-				yield value
+		const initialBuffer = canForceResponseStart ? '{"actions": [{"_type":' : ''
+		const parser = parseActionStream(textStream, initialBuffer, () => streamError !== null)
+		let finalState: { buffer: string; cursor: number } | undefined
+		while (true) {
+			const { value, done } = await parser.next()
+			if (done) {
+				finalState = value
+				break
 			}
-
-			console.log(
-				`[STREAM] buffer length: ${finalState?.buffer.length ?? 0}, actions yielded: ${finalState?.cursor ?? 0}`
-			)
-			if (finalState?.cursor === 0 && (finalState?.buffer.length ?? 0) > 0) {
-				console.log(`[STREAM] NO ACTIONS PARSED. Buffer start: "${finalState?.buffer.slice(0, 300)}"`)
-			}
-
-			// The AI SDK reports provider/model errors via `onError` (captured above)
-			// rather than throwing from the stream, so re-throw here to surface them.
-			if (streamError) throw streamError
-		} catch (error: any) {
-			console.error('streamActions error:', error)
-			throw error
+			yield value
 		}
+
+		console.log(
+			`[STREAM] buffer length: ${finalState?.buffer.length ?? 0}, actions yielded: ${finalState?.cursor ?? 0}`
+		)
+		if (finalState?.cursor === 0 && (finalState?.buffer.length ?? 0) > 0) {
+			console.log(`[STREAM] NO ACTIONS PARSED. Buffer start: "${finalState?.buffer.slice(0, 300)}"`)
+		}
+
+		// The AI SDK reports provider/model errors via `onError` (captured above)
+		// rather than throwing from the stream, so re-throw here to surface them.
+		if (streamError) throw streamError
 	}
 }
