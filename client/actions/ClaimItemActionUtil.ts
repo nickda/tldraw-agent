@@ -63,17 +63,19 @@ export const ClaimItemActionUtil = registerActionUtil(
 			// however many claims follow, which it does not reliably do.
 			const staySilent = ' Do not emit a message action here; stay silent and just draw.'
 
+			const drawStyle = 'Use many shapes with colour and fills. For curved or organic forms (ears, faces, animals, plants) prefer the pen action to draw freeform outlines rather than approximating with geometric shapes. No text labels.'
+
 			if (claimed.bounds) {
 				this.agent.schedule({
 					bounds: claimed.bounds,
 					agentMessages: [
-						`Draw "${claimed.text}" inside region x=${claimed.bounds.x} y=${claimed.bounds.y} w=${claimed.bounds.w} h=${claimed.bounds.h}. Use many shapes with color and fills. No text labels.${staySilent}`,
+						`Draw "${claimed.text}" inside region x=${claimed.bounds.x} y=${claimed.bounds.y} w=${claimed.bounds.w} h=${claimed.bounds.h}. ${drawStyle}${staySilent}`,
 					],
 				})
 			} else {
 				this.agent.schedule({
 					agentMessages: [
-						`Draw "${claimed.text}". Use many shapes with color and fills. No text labels.${staySilent}`,
+						`Draw "${claimed.text}". ${drawStyle}${staySilent}`,
 					],
 				})
 			}
