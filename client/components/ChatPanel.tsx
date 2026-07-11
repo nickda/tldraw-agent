@@ -50,7 +50,7 @@ export function ChatPanel() {
 
 				const positioningRule = hasExistingShapes
 					? `This is a MODIFICATION of an existing drawing. Position new items so they visually integrate with existing shapes (overlapping, touching, held by). Do NOT use disjoint regions, new elements should connect to what's already on canvas. Look at the screenshot to see where existing shapes are and place new items relative to them.`
-					: `This is a fresh drawing. Place items in disjoint regions so they don't overlap. Use the viewport bounds as a guide for positioning.`
+					: `This is a fresh drawing. Use the viewport bounds as a guide for positioning. Plan items that are PARTS OF THE SAME OBJECT (wheels on a car, eyes on a face, legs on a body) MUST have overlapping or adjacent bounds so the Executors draw them connected. Only use fully disjoint regions for truly separate objects (a house AND a tree, not a house's roof and walls).`
 
 				planner.interrupt({
 					input: {
