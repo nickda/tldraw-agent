@@ -27,6 +27,18 @@ body {
 .tldraw-canvas {
 	width: 100%;
 	height: 100%;
+	position: relative;
+}
+
+.canvas-logo {
+	position: absolute;
+	bottom: 12px;
+	right: 12px;
+	width: 80px;
+	height: auto;
+	opacity: 0.3;
+	pointer-events: none;
+	z-index: 100;
 }
 
 /* Bee */

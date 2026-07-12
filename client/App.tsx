@@ -98,6 +98,7 @@ function App() {
 					>
 						<TldrawAgentAppProvider onMount={setApp} onUnmount={handleUnmount} />
 					</Tldraw>
+					<img src="/eis-logo-mono.svg" alt="EIS" className="canvas-logo" />
 				</div>
 				<ErrorBoundary fallback={ChatPanelFallback}>
 					{app && (
