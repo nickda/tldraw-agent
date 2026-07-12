@@ -54,6 +54,7 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const [visibleSpeech, setVisibleSpeech] = useState<string | null>(null)
 	const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [motionState, setMotionState] = useState<BeeState>('idle')
+	const [facing, setFacing] = useState<'left' | 'right'>('right')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const annoyedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -144,6 +145,13 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		if (activePointerIdRef.current !== null) return
 
 		const hasMoved = didBeePositionMove(previousBeePositionRef.current, pagePosition)
+		const prev = previousBeePositionRef.current
+		if (prev && pagePosition) {
+			const dx = pagePosition.x - prev.x
+			if (Math.abs(dx) > 2) {
+				setFacing(dx > 0 ? 'right' : 'left')
+			}
+		}
 		previousBeePositionRef.current = pagePosition
 
 		if (!hasMoved) return
@@ -282,7 +290,7 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 						</div>
 					)}
 					<BeeReticle color={agent.beeColor} active={isActive} />
-					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} />
+					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} facing={facing} />
 				</div>
 			</div>
 		</div>

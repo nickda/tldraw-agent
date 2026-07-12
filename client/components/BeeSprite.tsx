@@ -21,10 +21,12 @@ export function BeeSprite({
 	beeName,
 	state,
 	color = 'currentColor',
+	facing = 'right',
 }: {
 	beeName: string
 	state: BeeState
 	color?: string
+	facing?: 'left' | 'right'
 }) {
 	const rootClassName = `bee-sprite bee-sprite--${state}`
 	const svgClassName = `bee-sprite__svg bee-sprite__svg--${state}`
@@ -59,7 +61,7 @@ export function BeeSprite({
 						<BeeWings color={color} />
 						<BeeAntennae />
 						<BeeBody variant={variant} />
-						<BeeLegs />
+						<BeeLegs facing={facing} />
 						{isWannaBee && <WannaBeeAccessories />}
 						{isMacBee && <MacBeeKilt />}
 						{poseName === 'drawing' && <DrawingArms />}
@@ -240,11 +242,19 @@ function DrawingArms() {
 	)
 }
 
-function BeeLegs() {
+function BeeLegs({ facing }: { facing: 'left' | 'right' }) {
+	if (facing === 'right') {
+		return (
+			<g className="bee-sprite__legs">
+				<path d="M19 44L15 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<path d="M29 44L25 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			</g>
+		)
+	}
 	return (
 		<g className="bee-sprite__legs">
-			<path d="M19 44L17 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-			<path d="M29 44L31 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+			<path d="M19 44L23 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			<path d="M29 44L33 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
 		</g>
 	)
 }
