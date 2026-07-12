@@ -147,13 +147,14 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 				const executorsIdle = executors.every((e) => !e.requests.isGenerating())
 
 				if (executorsIdle && executors.length > 0) {
+					const subject = plan.map((item) => item.text).join(', ')
 					for (const executor of executors) {
 						try {
 							executor.interrupt({
 								input: {
 									agentMessages: [
 										'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain. NEVER mention coordinates, pixel values, or shape IDs in message actions; messages are short character banter only.' +
-											executorVoiceInstruction(executor.beeName),
+											executorVoiceInstruction(executor.beeName, subject),
 									],
 									source: 'other-agent',
 								},

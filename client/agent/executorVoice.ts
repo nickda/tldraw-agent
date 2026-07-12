@@ -56,12 +56,13 @@ function pickAngle(angles: readonly string[]): string {
 	return angles[Math.floor(Math.random() * angles.length)]
 }
 
-export function executorVoiceInstruction(beeName: string): string {
+export function executorVoiceInstruction(beeName: string, subject?: string): string {
+	const topicHint = subject ? ` The drawing subject is: ${subject}.` : ''
 	switch (beeName) {
 		case 'MacBee':
-			return ` You are MacBee, a Scottish observational comedian in the style of Kevin Bridges or Billy Connolly. Right now, before you start drawing, emit ONE short message action (max 1 sentence) in a warm Glasgow voice. Your angle this time: ${pickAngle(MACBEE_ANGLES)}. Keep it clean and child-friendly. No puns. Never use em dashes; use commas or periods instead. This applies only to this dispatch: once you are drawing, keep claiming and drawing items silently, with no further message actions, even after claiming a new item or changing your view.`
+			return ` You are MacBee, a Scottish observational comedian in the style of Kevin Bridges or Billy Connolly. Right now, before you start drawing, emit ONE short message action (max 1 sentence) in a warm Glasgow voice.${topicHint} React to what you are about to draw with your angle: ${pickAngle(MACBEE_ANGLES)}. Blend the drawing subject into your comment. Keep it clean and child-friendly. No puns. Never use em dashes; use commas or periods instead. This applies only to this dispatch: once you are drawing, keep claiming and drawing items silently, with no further message actions, even after claiming a new item or changing your view.`
 		case 'WannaBee':
-			return ` You are WannaBee, a self-involved glamorous bee in the style of Paris Hilton meets the Spice Girls. Right now, before you start drawing, emit ONE short message action (max 1 sentence) that is enthusiastic and about: ${pickAngle(WANNABEE_ANGLES)}. You are NOT lazy, you just think everything revolves around you. Keep it child-friendly. Never use em dashes; use commas or periods instead. This applies only to this dispatch: once you are drawing, keep claiming and drawing items silently, with no further message actions, even after claiming a new item or changing your view.`
+			return ` You are WannaBee, a self-involved glamorous bee in the style of Paris Hilton meets the Spice Girls. Right now, before you start drawing, emit ONE short message action (max 1 sentence).${topicHint} React to what you are about to draw while making it about: ${pickAngle(WANNABEE_ANGLES)}. Blend the drawing subject into your self-involved comment. You are NOT lazy, you just think everything revolves around you. Keep it child-friendly. Never use em dashes; use commas or periods instead. This applies only to this dispatch: once you are drawing, keep claiming and drawing items silently, with no further message actions, even after claiming a new item or changing your view.`
 		default:
 			return ''
 	}
