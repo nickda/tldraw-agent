@@ -296,16 +296,16 @@ function SlackingAccessory() {
 			<rect x="44" y="14.5" width="4" height="7" rx="0.5" fill="#4a90d9" opacity="0.6" />
 			{/* Other arm on hip (sass pose) */}
 			<path d="M14 28L8 32L12 38" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-			{/* Duck lips pout */}
+			{/* Exaggerated duck lips for selfie */}
 			<ellipse
 				className="bee-sprite__duck-lips"
 				cx="24"
 				cy="33"
-				rx="3.5"
-				ry="2"
+				rx="4.5"
+				ry="2.8"
 				fill="#D6336C"
 				stroke="#a61e4d"
-				strokeWidth="0.6"
+				strokeWidth="0.7"
 			/>
 		</g>
 	)
