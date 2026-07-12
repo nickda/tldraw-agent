@@ -212,6 +212,18 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				await this.waitForPlannerIdle()
 				this.reviewGuard = false
 
+				// Move Beeyonce out of the artwork after final review
+				const currentRoundAfter = AgentAppPlanManager.getReviewRound(this.app.editor)
+				if (currentRoundAfter >= MAX_REVIEW_ROUNDS && this.planner) {
+					const allBounds = this.app.editor.getCurrentPageBounds()
+					if (allBounds) {
+						this.planner.requests.setBeePosition({
+							x: allBounds.x,
+							y: allBounds.maxY + 40,
+						})
+					}
+				}
+
 				// Safety net: if the planner finished its review but no executor
 				// is currently working (i.e., planner described issues but failed
 				// to emit delegateFix, or delegateFix targets were already idle),
