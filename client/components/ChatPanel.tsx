@@ -1,5 +1,7 @@
 import { FormEventHandler, useCallback, useRef, useState } from 'react'
 import { useAgent, useAgents, useTldrawAgentApp } from '../agent/TldrawAgentAppProvider'
+import { clearQueue } from '../hooks/useSpeechQueue'
+import { getTeamBeeSpawnPosition } from '../utils/beePosition'
 import { BeeDialogueFeed } from './BeeDialogueFeed'
 import { ChatHistory } from './chat-history/ChatHistory'
 import { ChatInput } from './ChatInput'
@@ -106,9 +108,16 @@ User request: ${value}`,
 		}
 		// Reset the shared plan and every agent's chat/state.
 		app.plan.reset()
+		clearQueue()
 		for (const a of app.agents.getAgents()) {
 			a.reset()
 		}
+		// Return bees to spawn positions
+		const viewportBounds = editor.getViewportPageBounds()
+		const agents = app.agents.getAgents()
+		agents.forEach((a, i) => {
+			a.requests.setBeePosition(getTeamBeeSpawnPosition(viewportBounds, i))
+		})
 	}, [app])
 
 	return (
