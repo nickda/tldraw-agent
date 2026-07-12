@@ -74,8 +74,15 @@ export const PenActionUtil = registerActionUtil(
 				points.push(...pointsToAdd)
 			}
 
-			// Require at least 2 points to draw a line
+			// Require at least 2 points to draw a line. If a prior streaming
+			// frame created this shape but we now have insufficient points,
+			// delete the stale shape to prevent tldraw's geometry cache from
+			// crashing on a single-point Polyline2d.
 			if (points.length <= 1) {
+				const shapeExists = this.editor.getShape(shapeId)
+				if (shapeExists) {
+					this.editor.deleteShape(shapeId)
+				}
 				return
 			}
 
@@ -93,23 +100,29 @@ export const PenActionUtil = registerActionUtil(
 				},
 			]
 
-			this.editor.createShape({
-				id: shapeId,
-				type: 'draw',
-				x: minX,
-				y: minY,
-				isLocked: !action.complete,
-				props: {
-					color: asColor(action.color ?? 'black'),
-					fill: convertFocusedFillToTldrawFill(action.fill ?? 'none'),
-					dash: 'draw',
-					size: 's',
-					segments,
-					isComplete: action.complete,
-					isClosed: action.closed,
-					isPen: true,
-				},
-			})
+			try {
+				this.editor.createShape({
+					id: shapeId,
+					type: 'draw',
+					x: minX,
+					y: minY,
+					isLocked: !action.complete,
+					props: {
+						color: asColor(action.color ?? 'black'),
+						fill: convertFocusedFillToTldrawFill(action.fill ?? 'none'),
+						dash: 'draw',
+						size: 's',
+						segments,
+						isComplete: action.complete,
+						isClosed: action.closed,
+						isPen: true,
+					},
+				})
+			} catch (e) {
+				console.warn(`[Pen] Shape creation failed for ${shapeId}, removing stale shape`, e)
+				const existing = this.editor.getShape(shapeId)
+				if (existing) this.editor.deleteShape(shapeId)
+			}
 		}
 	}
 )
