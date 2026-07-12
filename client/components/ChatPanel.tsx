@@ -146,6 +146,9 @@ User request: ${value}`,
 				<TodoList agent={agent} />
 				<ChatInput handleSubmit={handleSubmit} inputRef={inputRef} />
 			</div>
+			<div className="chat-panel__footer">
+				<img src="/eis-logo-white.svg" alt="EIS" className="chat-panel__logo" />
+			</div>
 		</div>
 	)
 }
