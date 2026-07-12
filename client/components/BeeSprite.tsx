@@ -64,8 +64,8 @@ export function BeeSprite({
 						<BeeLegs facing={facing} />
 						{isWannaBee && <WannaBeeAccessories />}
 						{isMacBee && <MacBeeKilt />}
-						{poseName === 'drawing' && <DrawingArms facing={facing} />}
-						{poseName === 'planning' && <PlanningClipboard />}
+						{poseName === 'drawing' && !isQueen && <DrawingArms facing={facing} />}
+						{(poseName === 'planning' || isQueen) && <PlanningClipboard />}
 						{poseName === 'slacking' && <SlackingAccessory />}
 					</g>
 					{isQueen && <QueenRegalia />}
