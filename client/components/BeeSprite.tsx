@@ -64,7 +64,7 @@ export function BeeSprite({
 						<BeeLegs facing={facing} />
 						{isWannaBee && <WannaBeeAccessories />}
 						{isMacBee && <MacBeeKilt />}
-						{poseName === 'drawing' && <DrawingArms />}
+						{poseName === 'drawing' && <DrawingArms facing={facing} />}
 						{poseName === 'planning' && <PlanningClipboard />}
 						{poseName === 'slacking' && <SlackingAccessory />}
 					</g>
@@ -227,16 +227,30 @@ function MacBeeKilt() {
 	)
 }
 
-function DrawingArms() {
+function DrawingArms({ facing }: { facing: 'left' | 'right' }) {
+	if (facing === 'right') {
+		return (
+			<g className="bee-sprite__drawing-arms">
+				<g className="bee-sprite__arm bee-sprite__arm--left">
+					<path d="M34 26L40 30L36 36" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+					<circle cx="36" cy="37" r="1.5" fill="currentColor" />
+				</g>
+				<g className="bee-sprite__arm bee-sprite__arm--right">
+					<path d="M34 32L40 36L36 42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+					<circle cx="36" cy="43" r="1.5" fill="currentColor" />
+				</g>
+			</g>
+		)
+	}
 	return (
 		<g className="bee-sprite__drawing-arms">
 			<g className="bee-sprite__arm bee-sprite__arm--left">
-				<path d="M14 28L8 34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-				<circle cx="7" cy="35" r="1.5" fill="currentColor" />
+				<path d="M14 26L8 30L12 36" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<circle cx="12" cy="37" r="1.5" fill="currentColor" />
 			</g>
 			<g className="bee-sprite__arm bee-sprite__arm--right">
-				<path d="M34 28L40 34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-				<circle cx="41" cy="35" r="1.5" fill="currentColor" />
+				<path d="M14 32L8 36L12 42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<circle cx="12" cy="43" r="1.5" fill="currentColor" />
 			</g>
 		</g>
 	)
