@@ -1205,27 +1205,27 @@ button.prompt-tag span {
 
 .bee-sprite__arm {
 	transform-box: fill-box;
-	transform-origin: top center;
+	transform-origin: 0% 50%;
 }
 
 .bee-sprite__arm--left {
-	animation: drum-left 0.4s ease-in-out infinite;
+	animation: pivot-up 0.35s cubic-bezier(0.3, 0, 0.7, 1) infinite;
 	animation-delay: var(--bee-anim-delay, 0ms);
 }
 
 .bee-sprite__arm--right {
-	animation: drum-right 0.4s ease-in-out infinite;
+	animation: pivot-down 0.35s cubic-bezier(0.3, 0, 0.7, 1) infinite;
 	animation-delay: var(--bee-anim-delay, 0ms);
 }
 
-@keyframes drum-left {
-	0%, 100% { transform: translateY(-3px); }
-	50% { transform: translateY(3px); }
+@keyframes pivot-up {
+	0%, 100% { transform: rotate(-12deg); }
+	50% { transform: rotate(12deg); }
 }
 
-@keyframes drum-right {
-	0%, 100% { transform: translateY(3px); }
-	50% { transform: translateY(-3px); }
+@keyframes pivot-down {
+	0%, 100% { transform: rotate(12deg); }
+	50% { transform: rotate(-12deg); }
 }
 
 /*
