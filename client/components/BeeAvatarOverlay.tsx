@@ -56,6 +56,8 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const [motionState, setMotionState] = useState<BeeState>('idle')
 	const [facing, setFacing] = useState<'left' | 'right'>('right')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
+	const [isCheckingPhone, setIsCheckingPhone] = useState(false)
+	const phoneIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const annoyedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const isPressActiveRef = useRef(false)
@@ -166,6 +168,29 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		}, BEE_MOVE_DURATION_MS)
 	}, [pagePosition])
 
+	// WannaBee checks her phone at random intervals while idle
+	useEffect(() => {
+		if (beeName !== 'WannaBee') return
+		const scheduleNext = () => {
+			const delay = 15000 + Math.random() * 5000
+			phoneIntervalRef.current = setTimeout(() => {
+				if (motionState === 'idle' && !isActive && !isSlacking) {
+					setIsCheckingPhone(true)
+					setTimeout(() => {
+						setIsCheckingPhone(false)
+						scheduleNext()
+					}, 4000 + Math.random() * 1000)
+				} else {
+					scheduleNext()
+				}
+			}, delay)
+		}
+		scheduleNext()
+		return () => {
+			if (phoneIntervalRef.current) clearTimeout(phoneIntervalRef.current)
+		}
+	}, [beeName, motionState, isActive, isSlacking])
+
 	// Show the latest message as a transient speech bubble, then auto-hide it.
 	// Keyed on the message's history index so re-showing the same text works and
 	// stale timers from a prior message are cleared.
@@ -239,11 +264,13 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const plannerPlanning = agent.role === 'planner' && isActive && motionState === 'idle'
 	const state: BeeState = isSlacking
 		? 'slacking'
-		: isAnnoyed
-			? 'annoyed'
-			: plannerPlanning
-				? 'planning'
-				: motionState
+		: isCheckingPhone
+			? 'slacking'
+			: isAnnoyed
+				? 'annoyed'
+				: plannerPlanning
+					? 'planning'
+					: motionState
 
 	return (
 		<div
