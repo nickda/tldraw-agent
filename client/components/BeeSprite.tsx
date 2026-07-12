@@ -59,9 +59,10 @@ export function BeeSprite({
 						<BeeWings color={color} />
 						<BeeAntennae />
 						<BeeBody variant={variant} />
+						<BeeLegs />
 						{isWannaBee && <WannaBeeAccessories />}
 						{isMacBee && <MacBeeKilt />}
-						{poseName === 'drawing' && <DrawingArm />}
+						{poseName === 'drawing' && <DrawingArms />}
 						{poseName === 'planning' && <PlanningClipboard />}
 						{poseName === 'slacking' && <SlackingAccessory />}
 					</g>
@@ -224,12 +225,26 @@ function MacBeeKilt() {
 	)
 }
 
-function DrawingArm() {
+function DrawingArms() {
 	return (
-		<g className="bee-sprite__drawing-arm">
-			<path d="M34 30L40 36" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-			<path d="M40 36L42 40" stroke="#c8a600" strokeWidth="1.2" strokeLinecap="round" />
-			<circle cx="42" cy="41" r="0.8" fill="#333" />
+		<g className="bee-sprite__drawing-arms">
+			<g className="bee-sprite__arm bee-sprite__arm--left">
+				<path d="M14 28L8 34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+				<circle cx="7" cy="35" r="1.5" fill="currentColor" />
+			</g>
+			<g className="bee-sprite__arm bee-sprite__arm--right">
+				<path d="M34 28L40 34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+				<circle cx="41" cy="35" r="1.5" fill="currentColor" />
+			</g>
+		</g>
+	)
+}
+
+function BeeLegs() {
+	return (
+		<g className="bee-sprite__legs">
+			<path d="M19 44L17 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+			<path d="M29 44L31 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
 		</g>
 	)
 }

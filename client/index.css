@@ -1203,16 +1203,29 @@ button.prompt-tag span {
 	animation: pencil-bob 0.4s ease-in-out infinite;
 }
 
-.bee-sprite__drawing-arm {
+.bee-sprite__arm {
 	transform-box: fill-box;
-	transform-origin: top left;
-	animation: pencil-bob 0.4s ease-in-out infinite;
+	transform-origin: top center;
+}
+
+.bee-sprite__arm--left {
+	animation: drum-left 0.4s ease-in-out infinite;
 	animation-delay: var(--bee-anim-delay, 0ms);
 }
 
-@keyframes pencil-bob {
-	0%, 100% { transform: translateY(0) rotate(0deg); }
-	50% { transform: translateY(3px) rotate(5deg); }
+.bee-sprite__arm--right {
+	animation: drum-right 0.4s ease-in-out infinite;
+	animation-delay: var(--bee-anim-delay, 0ms);
+}
+
+@keyframes drum-left {
+	0%, 100% { transform: translateY(-3px); }
+	50% { transform: translateY(3px); }
+}
+
+@keyframes drum-right {
+	0%, 100% { transform: translateY(3px); }
+	50% { transform: translateY(-3px); }
 }
 
 /*

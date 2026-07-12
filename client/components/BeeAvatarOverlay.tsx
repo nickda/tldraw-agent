@@ -8,7 +8,7 @@ import { BeeState } from '../types/BeeState'
 import { BeeSprite } from './BeeSprite'
 import { BeeReticle } from './BeeReticle'
 
-const BEE_MOVE_DURATION_MS = 400
+const BEE_MOVE_DURATION_MS = 2000
 const BEE_ANNOYED_DELAY_MS = 2000
 const BEE_SPEECH_DURATION_MS = 12000
 
