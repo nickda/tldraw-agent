@@ -280,23 +280,29 @@ function BeeLegs({ facing }: { facing: 'left' | 'right' }) {
 function SlackingAccessory() {
 	return (
 		<g className="bee-sprite__slacking-accessory">
-			<path d="M12 24L18 22" stroke="currentColor" strokeLinecap="round" />
+			{/* Outstretched selfie arm holding phone */}
+			<path d="M34 28L46 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
 			<rect
-				x="17"
-				y="14"
-				width="7"
-				height="11"
-				rx="1.3"
+				x="43"
+				y="13"
+				width="6"
+				height="10"
+				rx="1"
 				fill="#333"
-				transform="rotate(20 20.5 19.5)"
+				stroke="#555"
+				strokeWidth="0.5"
 			/>
-			<path d="M36 24L44 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+			{/* Phone screen glint */}
+			<rect x="44" y="14.5" width="4" height="7" rx="0.5" fill="#4a90d9" opacity="0.6" />
+			{/* Other arm on hip (sass pose) */}
+			<path d="M14 28L8 32L12 38" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			{/* Duck lips pout */}
 			<ellipse
 				className="bee-sprite__duck-lips"
 				cx="24"
-				cy="31"
-				rx="3"
-				ry="1.6"
+				cy="33"
+				rx="3.5"
+				ry="2"
 				fill="#D6336C"
 				stroke="#a61e4d"
 				strokeWidth="0.6"
