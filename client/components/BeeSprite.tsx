@@ -50,8 +50,8 @@ export function BeeSprite({
 					aria-label={`${beeName} bee`}
 					className={svgClassName}
 					viewBox="0 0 48 56"
-					width="48"
-					height="48"
+					width="58"
+					height="58"
 					fill="none"
 					xmlns="http://www.w3.org/2000/svg"
 				>
@@ -200,17 +200,26 @@ function WannaBeeAccessories() {
 function MacBeeKilt() {
 	return (
 		<g className="bee-sprite__kilt">
+			{/* Pleated kilt skirt flaring out at the bottom */}
 			<path
-				d="M16 38C16 38 17 44 24 44C31 44 32 38 32 38V42C32 45 28 47 24 47C20 47 16 45 16 42Z"
+				d="M14 36H34L36 48H12Z"
 				fill="#1a5e1a"
 				stroke="#0d3d0d"
-				strokeWidth="0.7"
+				strokeWidth="0.8"
+				strokeLinejoin="round"
 			/>
-			<path d="M20 38V46" stroke="#c8a600" strokeWidth="0.5" />
-			<path d="M24 38V47" stroke="#c8a600" strokeWidth="0.5" />
-			<path d="M28 38V46" stroke="#c8a600" strokeWidth="0.5" />
-			<path d="M16 41H32" stroke="#c8a600" strokeWidth="0.5" />
-			<path d="M16 44H32" stroke="#c8a600" strokeWidth="0.5" />
+			{/* Tartan grid */}
+			<path d="M16 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M20 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M24 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M28 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M32 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M13 40H35" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M12.5 44H35.5" stroke="#c8a600" strokeWidth="0.6" />
+			{/* Red accent lines (Royal Stewart tartan feel) */}
+			<path d="M18 36V48" stroke="#cc0000" strokeWidth="0.4" />
+			<path d="M30 36V48" stroke="#cc0000" strokeWidth="0.4" />
+			<path d="M13 42H35" stroke="#cc0000" strokeWidth="0.4" />
 		</g>
 	)
 }
