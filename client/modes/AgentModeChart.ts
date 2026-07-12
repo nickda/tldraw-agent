@@ -59,6 +59,10 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 						y: allBounds.maxY + 40,
 					})
 				}
+				// Safety net: trigger review check when an executor enters idle
+				// from executing, regardless of whether it came through
+				// onPromptEnd (normal) or onPromptCancel (stream error/interrupt).
+				AgentAppTeamManager.triggerReviewCheck()
 			}
 		},
 	},
@@ -148,7 +152,7 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 							executor.interrupt({
 								input: {
 									agentMessages: [
-										'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.' +
+										'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain. NEVER mention coordinates, pixel values, or shape IDs in message actions; messages are short character banter only.' +
 											executorVoiceInstruction(executor.beeName),
 									],
 									source: 'other-agent',
@@ -185,7 +189,10 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			// (e.g. from delegateFix) permanently in-progress, since no shapes
 			// meant the item was never marked done and the review loop never
 			// re-checked.
-			if (agent.requests.getScheduledRequest()) return
+			if (agent.requests.getScheduledRequest()) {
+				console.log(`[${agent.beeName}] onPromptEnd: has scheduled follow-up, deferring`)
+				return
+			}
 
 			const plan = AgentAppPlanManager.getPlan(agent.editor)
 			const myInProgress = plan.findIndex(
@@ -195,6 +202,9 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 				const updated = plan.slice()
 				updated[myInProgress] = { ...updated[myInProgress], status: 'done' }
 				AgentAppPlanManager.$plan.set(agent.editor, updated)
+				console.log(`[${agent.beeName}] onPromptEnd: marked "${plan[myInProgress].text}" done`)
+			} else {
+				console.log(`[${agent.beeName}] onPromptEnd: no in-progress item to mark done`)
 			}
 
 			// Try to claim the next item.
@@ -202,11 +212,13 @@ const _AGENT_MODE_CHART: Record<AgentModeDefinition['type'], AgentModeNode> = {
 			const hasUnclaimed = currentPlan.some((item) => item.status === 'todo')
 
 			if (hasUnclaimed) {
+				console.log(`[${agent.beeName}] onPromptEnd: scheduling next claim`)
 				agent.schedule({
 					agentMessages: ['Claim the next available plan item and draw it.'],
 					source: 'self',
 				})
 			} else {
+				console.log(`[${agent.beeName}] onPromptEnd: all items done, going idle`)
 				agent.mode.setMode('idling')
 				AgentAppTeamManager.triggerReviewCheck()
 			}

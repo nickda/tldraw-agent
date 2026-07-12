@@ -31,6 +31,8 @@ export function BeeSprite({
 	const poseName = getPoseName(state)
 	const variant: 'classic' | 'saltire' = beeName === 'MacBee' ? 'saltire' : 'classic'
 	const isQueen = beeName === 'Beeyonce'
+	const isWannaBee = beeName === 'WannaBee'
+	const isMacBee = beeName === 'MacBee'
 
 	return (
 		<div
@@ -57,6 +59,9 @@ export function BeeSprite({
 						<BeeWings color={color} />
 						<BeeAntennae />
 						<BeeBody variant={variant} />
+						{isWannaBee && <WannaBeeAccessories />}
+						{isMacBee && <MacBeeKilt />}
+						{poseName === 'drawing' && <DrawingArm />}
 						{poseName === 'planning' && <PlanningClipboard />}
 						{poseName === 'slacking' && <SlackingAccessory />}
 					</g>
@@ -154,6 +159,13 @@ function QueenRegalia() {
 				strokeWidth="1"
 				strokeLinejoin="round"
 			/>
+			<path
+				d="M10 22C8 22 7 24 7 26C7 28 8 29 10 29"
+				stroke="#555"
+				strokeWidth="1"
+				fill="none"
+			/>
+			<circle cx="7" cy="29" r="2" fill="#555" />
 		</g>
 	)
 }
@@ -169,10 +181,53 @@ function PlanningClipboard() {
 	)
 }
 
+function WannaBeeAccessories() {
+	return (
+		<g className="bee-sprite__wannabee-accessories">
+			<ellipse
+				cx="24"
+				cy="33"
+				rx="3"
+				ry="1.6"
+				fill="#D6336C"
+				stroke="#a61e4d"
+				strokeWidth="0.6"
+			/>
+		</g>
+	)
+}
+
+function MacBeeKilt() {
+	return (
+		<g className="bee-sprite__kilt">
+			<path
+				d="M16 38C16 38 17 44 24 44C31 44 32 38 32 38V42C32 45 28 47 24 47C20 47 16 45 16 42Z"
+				fill="#1a5e1a"
+				stroke="#0d3d0d"
+				strokeWidth="0.7"
+			/>
+			<path d="M20 38V46" stroke="#c8a600" strokeWidth="0.5" />
+			<path d="M24 38V47" stroke="#c8a600" strokeWidth="0.5" />
+			<path d="M28 38V46" stroke="#c8a600" strokeWidth="0.5" />
+			<path d="M16 41H32" stroke="#c8a600" strokeWidth="0.5" />
+			<path d="M16 44H32" stroke="#c8a600" strokeWidth="0.5" />
+		</g>
+	)
+}
+
+function DrawingArm() {
+	return (
+		<g className="bee-sprite__drawing-arm">
+			<path d="M34 30L40 36" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+			<path d="M40 36L42 40" stroke="#c8a600" strokeWidth="1.2" strokeLinecap="round" />
+			<circle cx="42" cy="41" r="0.8" fill="#333" />
+		</g>
+	)
+}
+
 function SlackingAccessory() {
 	return (
 		<g className="bee-sprite__slacking-accessory">
-			{/* left arm holding phone */}
 			<path d="M12 24L18 22" stroke="currentColor" strokeLinecap="round" />
 			<rect
 				x="17"
@@ -183,9 +238,7 @@ function SlackingAccessory() {
 				fill="#333"
 				transform="rotate(20 20.5 19.5)"
 			/>
-			{/* right arm flung out dramatically */}
 			<path d="M36 24L44 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-			{/* duck lips */}
 			<ellipse
 				className="bee-sprite__duck-lips"
 				cx="24"

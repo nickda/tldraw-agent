@@ -67,6 +67,21 @@ export const DelegateFixActionUtil = registerActionUtil(
 						? `\n\nThe real shape IDs in this region are: ${idsInRegion.join(', ')}. Edit these by ID; do not invent IDs.`
 						: ''
 
+				// Count how many prior fix items were assigned to this executor
+				// (completed or in-progress) to detect repeated failures and
+				// escalate the instruction so the model doesn't repeat the same
+				// mistake.
+				const priorFixAttempts = plan.filter(
+					(item) => item.assignee === executor!.id && item.status === 'done'
+				).length
+
+				let retryWarning = ''
+				if (priorFixAttempts >= 2) {
+					retryWarning = `\n\nIMPORTANT: You have already attempted fixes ${priorFixAttempts} times and the problem persists. Your previous approach is NOT WORKING. You MUST try a completely different strategy: delete the problematic shapes entirely and redraw them in the correct position, or use sendToBack/bringToFront to fix z-order. Do not repeat what you did before.`
+				} else if (priorFixAttempts >= 1) {
+					retryWarning = `\n\nNote: You already attempted a fix and it did not resolve the issue. Try a different approach this time. If you moved shapes before, try deleting and redrawing instead, or vice versa.`
+				}
+
 				executor.interrupt({
 					input: {
 						bounds,
@@ -75,7 +90,9 @@ export const DelegateFixActionUtil = registerActionUtil(
 
 ${action.text}
 
-Use move actions to reposition existing shapes, delete to remove wrong shapes, or create to add missing ones. Look at the screenshot to identify which shapes need to change. Do NOT redraw everything, only fix what's wrong.${idsLine}`,
+Use move actions to reposition existing shapes, delete to remove wrong shapes, or create to add missing ones. Look at the screenshot to identify which shapes need to change. Do NOT redraw everything, only fix what's wrong.${idsLine}${retryWarning}
+
+If you emit a message action, keep it to ONE short sentence in your character voice. NEVER mention coordinates, pixel values, shape IDs, or technical details in messages. Messages are banter for the user, not a log of what you did.`,
 						],
 						source: 'other-agent',
 					},

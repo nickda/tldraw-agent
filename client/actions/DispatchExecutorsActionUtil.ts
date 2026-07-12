@@ -35,10 +35,11 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 
 				for (const executor of executors) {
 					try {
+						console.log(`[TeamMode] Dispatching ${executor.beeName} (${executor.id})`)
 						executor.interrupt({
 							input: {
 								agentMessages: [
-									'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.' +
+									'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain. NEVER mention coordinates, pixel values, or shape IDs in message actions; messages are short character banter only.' +
 										executorVoiceInstruction(executor.beeName),
 								],
 								source: 'other-agent',
