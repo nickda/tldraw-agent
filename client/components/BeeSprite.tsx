@@ -229,28 +229,30 @@ function MacBeeKilt() {
 
 function DrawingArms({ facing }: { facing: 'left' | 'right' }) {
 	if (facing === 'right') {
+		// Arms extend right, horizontal with elbow bend
 		return (
 			<g className="bee-sprite__drawing-arms">
 				<g className="bee-sprite__arm bee-sprite__arm--left">
-					<path d="M34 26L40 30L36 36" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-					<circle cx="36" cy="37" r="1.5" fill="currentColor" />
+					<path d="M34 26L40 26L43 23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+					<circle cx="43" cy="22" r="1.5" fill="currentColor" />
 				</g>
 				<g className="bee-sprite__arm bee-sprite__arm--right">
-					<path d="M34 32L40 36L36 42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-					<circle cx="36" cy="43" r="1.5" fill="currentColor" />
+					<path d="M34 34L40 34L43 31" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+					<circle cx="43" cy="30" r="1.5" fill="currentColor" />
 				</g>
 			</g>
 		)
 	}
+	// Arms extend left, horizontal with elbow bend
 	return (
 		<g className="bee-sprite__drawing-arms">
 			<g className="bee-sprite__arm bee-sprite__arm--left">
-				<path d="M14 26L8 30L12 36" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-				<circle cx="12" cy="37" r="1.5" fill="currentColor" />
+				<path d="M14 26L8 26L5 23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<circle cx="5" cy="22" r="1.5" fill="currentColor" />
 			</g>
 			<g className="bee-sprite__arm bee-sprite__arm--right">
-				<path d="M14 32L8 36L12 42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-				<circle cx="12" cy="43" r="1.5" fill="currentColor" />
+				<path d="M14 34L8 34L5 31" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<circle cx="5" cy="30" r="1.5" fill="currentColor" />
 			</g>
 		</g>
 	)
@@ -258,17 +260,19 @@ function DrawingArms({ facing }: { facing: 'left' | 'right' }) {
 
 function BeeLegs({ facing }: { facing: 'left' | 'right' }) {
 	if (facing === 'right') {
+		// Knees point right (>) when walking right
 		return (
 			<g className="bee-sprite__legs">
-				<path d="M19 44L15 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-				<path d="M29 44L25 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<path d="M19 44L23 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<path d="M29 44L33 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
 			</g>
 		)
 	}
+	// Knees point left (<) when walking left
 	return (
 		<g className="bee-sprite__legs">
-			<path d="M19 44L23 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-			<path d="M29 44L33 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			<path d="M19 44L15 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			<path d="M29 44L25 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
 		</g>
 	)
 }
