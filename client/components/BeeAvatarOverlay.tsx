@@ -6,7 +6,7 @@ import { useBeePosition } from '../hooks/useBeePosition'
 import { useLatestBeeMessage } from '../hooks/useBeeSpeech'
 import { BeeState } from '../types/BeeState'
 import { BeeSprite } from './BeeSprite'
-import { BeeReticle } from './BeeReticle'
+// import { BeeReticle } from './BeeReticle'
 
 const BEE_MOVE_DURATION_MS = 2000
 const BEE_ANNOYED_DELAY_MS = 2000
@@ -289,7 +289,7 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 							<span className="bee-speech-bubble__text">{visibleSpeech}</span>
 						</div>
 					)}
-					<BeeReticle color={agent.beeColor} active={isActive} />
+					{/* <BeeReticle color={agent.beeColor} active={isActive} /> */}
 					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} facing={facing} />
 				</div>
 			</div>
