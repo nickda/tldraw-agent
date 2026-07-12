@@ -6,9 +6,9 @@ import { useBeePosition } from '../hooks/useBeePosition'
 import { useLatestBeeMessage } from '../hooks/useBeeSpeech'
 import { BeeState } from '../types/BeeState'
 import { BeeSprite } from './BeeSprite'
-import { BeeReticle } from './BeeReticle'
+// import { BeeReticle } from './BeeReticle'
 
-const BEE_MOVE_DURATION_MS = 400
+const BEE_MOVE_DURATION_MS = 2000
 const BEE_ANNOYED_DELAY_MS = 2000
 const BEE_SPEECH_DURATION_MS = 12000
 
@@ -54,6 +54,7 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	const [visibleSpeech, setVisibleSpeech] = useState<string | null>(null)
 	const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [motionState, setMotionState] = useState<BeeState>('idle')
+	const [facing, setFacing] = useState<'left' | 'right'>('right')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
 	const movementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const annoyedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -144,6 +145,13 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		if (activePointerIdRef.current !== null) return
 
 		const hasMoved = didBeePositionMove(previousBeePositionRef.current, pagePosition)
+		const prev = previousBeePositionRef.current
+		if (prev && pagePosition) {
+			const dx = pagePosition.x - prev.x
+			if (Math.abs(dx) > 2) {
+				setFacing(dx > 0 ? 'right' : 'left')
+			}
+		}
 		previousBeePositionRef.current = pagePosition
 
 		if (!hasMoved) return
@@ -281,8 +289,8 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 							<span className="bee-speech-bubble__text">{visibleSpeech}</span>
 						</div>
 					)}
-					<BeeReticle color={agent.beeColor} active={isActive} />
-					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} />
+					{/* <BeeReticle color={agent.beeColor} active={isActive} /> */}
+					<BeeSprite beeName={beeName} state={state} color={agent.beeColor} facing={facing} />
 				</div>
 			</div>
 		</div>

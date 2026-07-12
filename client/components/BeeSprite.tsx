@@ -21,16 +21,20 @@ export function BeeSprite({
 	beeName,
 	state,
 	color = 'currentColor',
+	facing = 'right',
 }: {
 	beeName: string
 	state: BeeState
 	color?: string
+	facing?: 'left' | 'right'
 }) {
 	const rootClassName = `bee-sprite bee-sprite--${state}`
 	const svgClassName = `bee-sprite__svg bee-sprite__svg--${state}`
 	const poseName = getPoseName(state)
 	const variant: 'classic' | 'saltire' = beeName === 'MacBee' ? 'saltire' : 'classic'
 	const isQueen = beeName === 'Beeyonce'
+	const isWannaBee = beeName === 'WannaBee'
+	const isMacBee = beeName === 'MacBee'
 
 	return (
 		<div
@@ -48,8 +52,8 @@ export function BeeSprite({
 					aria-label={`${beeName} bee`}
 					className={svgClassName}
 					viewBox="0 0 48 56"
-					width="48"
-					height="48"
+					width="58"
+					height="58"
 					fill="none"
 					xmlns="http://www.w3.org/2000/svg"
 				>
@@ -57,7 +61,11 @@ export function BeeSprite({
 						<BeeWings color={color} />
 						<BeeAntennae />
 						<BeeBody variant={variant} />
-						{poseName === 'planning' && <PlanningClipboard />}
+						<BeeLegs facing={facing} />
+						{isWannaBee && <WannaBeeAccessories />}
+						{isMacBee && <MacBeeKilt />}
+						{poseName === 'drawing' && !isQueen && <DrawingArms facing={facing} />}
+						{(poseName === 'planning' || isQueen) && <PlanningClipboard />}
 						{poseName === 'slacking' && <SlackingAccessory />}
 					</g>
 					{isQueen && <QueenRegalia />}
@@ -154,6 +162,13 @@ function QueenRegalia() {
 				strokeWidth="1"
 				strokeLinejoin="round"
 			/>
+			<path
+				d="M10 22C8 22 7 24 7 26C7 28 8 29 10 29"
+				stroke="#555"
+				strokeWidth="1"
+				fill="none"
+			/>
+			<circle cx="7" cy="29" r="2" fill="#555" />
 		</g>
 	)
 }
@@ -169,10 +184,102 @@ function PlanningClipboard() {
 	)
 }
 
+function WannaBeeAccessories() {
+	return (
+		<g className="bee-sprite__wannabee-accessories">
+			<ellipse
+				cx="24"
+				cy="33"
+				rx="3"
+				ry="1.6"
+				fill="#D6336C"
+				stroke="#a61e4d"
+				strokeWidth="0.6"
+			/>
+		</g>
+	)
+}
+
+function MacBeeKilt() {
+	return (
+		<g className="bee-sprite__kilt">
+			{/* Pleated kilt skirt flaring out at the bottom */}
+			<path
+				d="M14 36H34L36 48H12Z"
+				fill="#1a5e1a"
+				stroke="#0d3d0d"
+				strokeWidth="0.8"
+				strokeLinejoin="round"
+			/>
+			{/* Tartan grid */}
+			<path d="M16 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M20 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M24 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M28 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M32 36V48" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M13 40H35" stroke="#c8a600" strokeWidth="0.6" />
+			<path d="M12.5 44H35.5" stroke="#c8a600" strokeWidth="0.6" />
+			{/* Red accent lines (Royal Stewart tartan feel) */}
+			<path d="M18 36V48" stroke="#cc0000" strokeWidth="0.4" />
+			<path d="M30 36V48" stroke="#cc0000" strokeWidth="0.4" />
+			<path d="M13 42H35" stroke="#cc0000" strokeWidth="0.4" />
+		</g>
+	)
+}
+
+function DrawingArms({ facing }: { facing: 'left' | 'right' }) {
+	if (facing === 'right') {
+		// Arms extend right, horizontal with elbow bend
+		return (
+			<g className="bee-sprite__drawing-arms">
+				<g className="bee-sprite__arm bee-sprite__arm--left">
+					<path d="M34 26L40 26L43 23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+					<circle cx="43" cy="22" r="1.5" fill="currentColor" />
+				</g>
+				<g className="bee-sprite__arm bee-sprite__arm--right">
+					<path d="M34 34L40 34L43 31" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+					<circle cx="43" cy="30" r="1.5" fill="currentColor" />
+				</g>
+			</g>
+		)
+	}
+	// Arms extend left, horizontal with elbow bend
+	return (
+		<g className="bee-sprite__drawing-arms">
+			<g className="bee-sprite__arm bee-sprite__arm--left">
+				<path d="M14 26L8 26L5 23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<circle cx="5" cy="22" r="1.5" fill="currentColor" />
+			</g>
+			<g className="bee-sprite__arm bee-sprite__arm--right">
+				<path d="M14 34L8 34L5 31" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<circle cx="5" cy="30" r="1.5" fill="currentColor" />
+			</g>
+		</g>
+	)
+}
+
+function BeeLegs({ facing }: { facing: 'left' | 'right' }) {
+	if (facing === 'right') {
+		// Knees point right (>) when walking right
+		return (
+			<g className="bee-sprite__legs">
+				<path d="M19 44L23 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+				<path d="M29 44L33 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			</g>
+		)
+	}
+	// Knees point left (<) when walking left
+	return (
+		<g className="bee-sprite__legs">
+			<path d="M19 44L15 48L19 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+			<path d="M29 44L25 48L29 52" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+		</g>
+	)
+}
+
 function SlackingAccessory() {
 	return (
 		<g className="bee-sprite__slacking-accessory">
-			{/* left arm holding phone */}
 			<path d="M12 24L18 22" stroke="currentColor" strokeLinecap="round" />
 			<rect
 				x="17"
@@ -183,9 +290,7 @@ function SlackingAccessory() {
 				fill="#333"
 				transform="rotate(20 20.5 19.5)"
 			/>
-			{/* right arm flung out dramatically */}
 			<path d="M36 24L44 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-			{/* duck lips */}
 			<ellipse
 				className="bee-sprite__duck-lips"
 				cx="24"

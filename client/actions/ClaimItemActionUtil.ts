@@ -6,7 +6,7 @@ import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
 
 /** The chance, per claim, that WannaBee enters her slacking pause. */
-export const WANNABEE_SLACK_CHANCE = 0.6
+export const WANNABEE_SLACK_CHANCE = 0 // temporarily disabled
 
 /** The minimum and maximum real pause duration for WannaBee's slacking state. */
 export const WANNABEE_SLACK_MIN_MS = 2000
@@ -47,7 +47,12 @@ export const ClaimItemActionUtil = registerActionUtil(
 			if (!action.complete) return
 
 			const claimed = AgentAppPlanManager.claim(this.editor, this.agent.id)
-			if (!claimed) return
+			if (!claimed) {
+				console.warn(`[${this.agent.beeName}] claimItem fired but nothing to claim`)
+				return
+			}
+			console.log(`[${this.agent.beeName}] claimed: "${claimed.text}"${claimed.bounds ? ` bounds=${JSON.stringify(claimed.bounds)}` : ''}`)
+
 
 			if (shouldSlack(this.agent.beeName, Math.random())) {
 				this.agent.requests.setSlacking(true)

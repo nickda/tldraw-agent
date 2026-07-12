@@ -1,6 +1,7 @@
 import { DispatchExecutorsAction } from '../../shared/schema/AgentActionSchemas'
 import { Streaming } from '../../shared/types/Streaming'
 import { AgentAppAgentsManager } from '../agent/managers/AgentAppAgentsManager'
+import { AgentAppPlanManager } from '../agent/managers/AgentAppPlanManager'
 import { executorVoiceInstruction } from '../agent/executorVoice'
 import { AgentHelpers } from '../AgentHelpers'
 import { AgentActionUtil, registerActionUtil } from './AgentActionUtil'
@@ -33,13 +34,17 @@ export const DispatchExecutorsActionUtil = registerActionUtil(
 					return
 				}
 
+				const plan = AgentAppPlanManager.getPlan(editor)
+				const subject = plan.map((item) => item.text).join(', ')
+
 				for (const executor of executors) {
 					try {
+						console.log(`[TeamMode] Dispatching ${executor.beeName} (${executor.id})`)
 						executor.interrupt({
 							input: {
 								agentMessages: [
-									'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain.' +
-										executorVoiceInstruction(executor.beeName),
+									'You are an Executor Bee. Claim a plan item using the claimItem action and draw it inside its bounds region. When done, claim another item. Repeat until no items remain. NEVER mention coordinates, pixel values, or shape IDs in message actions; messages are short character banter only.' +
+										executorVoiceInstruction(executor.beeName, subject),
 								],
 								source: 'other-agent',
 							},

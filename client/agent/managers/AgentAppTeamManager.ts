@@ -53,9 +53,18 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 		AgentAppTeamManager.instance?.grumbleAboutSlacker(slackerName)
 	}
 
+	private lastGrumble: string | null = null
+
 	private grumbleAboutSlacker(slackerName: string) {
 		if (!this.planner) return
-		const grumble = pickSlackGrumble(slackerName)
+		// Max one grumble per slack session to avoid Beeyonce repeating herself
+		if (this.lastGrumble !== null) return
+		let grumble = pickSlackGrumble(slackerName)
+		// Avoid repeating the same line if the random roll hits it again
+		if (grumble === this.lastGrumble) {
+			grumble = pickSlackGrumble(slackerName, (Math.random() + 0.3) % 1)
+		}
+		this.lastGrumble = grumble
 		this.planner.chat.push({
 			type: 'action',
 			action: { _type: 'message', text: grumble, complete: true, time: 0 },
@@ -173,7 +182,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'All plan items are done. First, send a message (in your dry witty voice) describing what you see. Then critically review. Check: overlapping/occlusion (are objects covering faces or important parts? Use sendToBack/bringToFront to fix z-order), alignment, proportions, disconnected elements. Your bar for "needs fixing" should be LOW. Use delegateFix for EVERY issue. Only say complete if genuinely nothing to improve.',
+								'All plan items are done. First, send a message (in your dry witty voice, MAX 2 sentences) describing what you see. Then critically review. Check: 1) MISSING FEATURES (does a face have eyes, nose, mouth? does a body have all limbs? are key details absent?), 2) overlapping/occlusion (shapes covering faces or important parts, use sendToBack/bringToFront), 3) alignment and proportions, 4) disconnected/floating elements that should be attached. Your bar for "needs fixing" should be LOW. You MUST emit at least one delegateFix action if anything is imperfect. Describing a problem in a message without delegating a fix is useless because no one will act on it. Only say complete if genuinely nothing to improve.',
 							],
 							source: 'self',
 						},
@@ -182,7 +191,7 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 					this.planner?.interrupt({
 						input: {
 							agentMessages: [
-								'You already reviewed this scene once. Do not re-describe or re-check areas you already passed. Verify only the fixes you just delegated and anything they touched: did each fix land correctly, and did it introduce a new overlap, alignment, or proportion issue nearby? Do not use the think action here; go straight to delegateFix for anything still wrong. Only send a message if there is something new to flag or you are genuinely done; a short "looks good" is fine.',
+								'Follow-up review. Rules: 1) Do NOT send a message describing the scene again. You already did that. 2) Do NOT re-describe issues you already flagged in previous messages. 3) Check ONLY whether your delegated fixes landed correctly. 4) If an issue persists, immediately delegateFix it again with no message. 5) Only send a message if everything is genuinely fixed (a short "done" or quip is fine) or if there is a NEW issue you have not mentioned before.',
 							],
 							source: 'self',
 						},
@@ -202,6 +211,22 @@ export class AgentAppTeamManager extends BaseAgentAppManager {
 				// a second review while the first was still in flight.
 				await this.waitForPlannerIdle()
 				this.reviewGuard = false
+
+				// Safety net: if the planner finished its review but no executor
+				// is currently working (i.e., planner described issues but failed
+				// to emit delegateFix, or delegateFix targets were already idle),
+				// re-check so the system doesn't stall. A short delay lets any
+				// just-dispatched executor start generating first.
+				setTimeout(() => {
+					const executorsBusy = this.executors.some((e) => e.requests.isGenerating())
+					if (!executorsBusy && this.planner && !this.reviewGuard) {
+						const currentRound = AgentAppPlanManager.getReviewRound(this.app.editor)
+						if (currentRound < MAX_REVIEW_ROUNDS) {
+							console.log('[TeamMode] Planner review ended with no executor work dispatched, re-triggering')
+							this.checkReviewLoop()
+						}
+					}
+				}, 500)
 			}
 		}, 50)
 	}

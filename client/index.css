@@ -1200,12 +1200,32 @@ button.prompt-tag span {
 /* Bee planning animation */
 
 .bee-sprite__pencil-hand {
-	animation: pencil-bob 0.8s ease-in-out infinite;
+	animation: pencil-bob 0.4s ease-in-out infinite;
 }
 
-@keyframes pencil-bob {
-	0%, 100% { transform: translateY(0); }
-	50% { transform: translateY(2px); }
+.bee-sprite__arm {
+	transform-box: fill-box;
+	transform-origin: 0% 50%;
+}
+
+.bee-sprite__arm--left {
+	animation: pivot-up 0.35s cubic-bezier(0.3, 0, 0.7, 1) infinite;
+	animation-delay: var(--bee-anim-delay, 0ms);
+}
+
+.bee-sprite__arm--right {
+	animation: pivot-down 0.35s cubic-bezier(0.3, 0, 0.7, 1) infinite;
+	animation-delay: var(--bee-anim-delay, 0ms);
+}
+
+@keyframes pivot-up {
+	0%, 100% { transform: rotate(-12deg); }
+	50% { transform: rotate(12deg); }
+}
+
+@keyframes pivot-down {
+	0%, 100% { transform: rotate(12deg); }
+	50% { transform: rotate(-12deg); }
 }
 
 /*

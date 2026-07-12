@@ -13,6 +13,19 @@ export function stripEmDashes(text: string): string {
 }
 
 /**
+ * Strip coordinate references, pixel values, and shape IDs from message text.
+ * Bee messages are user-facing banter; technical narration belongs in actions.
+ */
+export function stripCoordinates(text: string): string {
+	return text
+		.replace(/\(?\s*[xy]:\s*-?\d+[\s,]*[xy]?:?\s*-?\d+\s*\)?/gi, '')
+		.replace(/\b\d+px\b/gi, '')
+		.replace(/\b(shape|id)[_-]?[a-z0-9]{6,}\b/gi, '')
+		.replace(/\s{2,}/g, ' ')
+		.trim()
+}
+
+/**
  * American -> British spellings for the words that actually turn up in the
  * bees' drawing commentary. A curated whole-word map, not suffix regex, so
  * common words like "size" or "her" are never mangled. Keys must be lower
@@ -105,7 +118,7 @@ export const MessageActionUtil = registerActionUtil(
 			}
 
 			if (typeof action.text === 'string') {
-				return { ...action, text: britishiseSpelling(stripEmDashes(action.text)) }
+				return { ...action, text: britishiseSpelling(stripEmDashes(stripCoordinates(action.text))) }
 			}
 			return action
 		}
