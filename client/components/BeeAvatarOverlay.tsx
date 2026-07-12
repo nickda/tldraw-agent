@@ -1,16 +1,15 @@
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useEditor, useValue, VecModel } from 'tldraw'
 import { TldrawAgent } from '../agent/TldrawAgent'
 import { useAgents } from '../agent/TldrawAgentAppProvider'
 import { useBeePosition } from '../hooks/useBeePosition'
 import { useLatestBeeMessage } from '../hooks/useBeeSpeech'
+import { enqueueSpeech, subscribe } from '../hooks/useSpeechQueue'
 import { BeeState } from '../types/BeeState'
 import { BeeSprite } from './BeeSprite'
-// import { BeeReticle } from './BeeReticle'
 
 const BEE_MOVE_DURATION_MS = 2000
 const BEE_ANNOYED_DELAY_MS = 2000
-const BEE_SPEECH_DURATION_MS = 12000
 
 export function getBeeSpriteScale(zoomLevel: number) {
 	return zoomLevel > 0 ? 1 / zoomLevel : 1
@@ -52,7 +51,7 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 	)
 	const latestMessage = useLatestBeeMessage(agent)
 	const [visibleSpeech, setVisibleSpeech] = useState<string | null>(null)
-	const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const lastEnqueuedIndexRef = useRef<number | null>(null)
 	const [motionState, setMotionState] = useState<BeeState>('idle')
 	const [facing, setFacing] = useState<'left' | 'right'>('right')
 	const [isAnnoyed, setIsAnnoyed] = useState(false)
@@ -191,34 +190,34 @@ export function BeeAvatarOverlay({ agent }: { agent: TldrawAgent }) {
 		}
 	}, [beeName, motionState, isActive, isSlacking])
 
-	// Show the latest message as a transient speech bubble, then auto-hide it.
-	// Keyed on the message's history index so re-showing the same text works and
-	// stale timers from a prior message are cleared.
+	// Enqueue new messages into the global speech queue
 	useEffect(() => {
-		if (speechTimeoutRef.current) {
-			clearTimeout(speechTimeoutRef.current)
-			speechTimeoutRef.current = null
-		}
 		if (!latestMessage) {
-			// Chat history was reset (Clear/New chat): drop any bubble still
-			// showing instead of leaving stale text up until its timer fires.
 			setVisibleSpeech(null)
 			return
 		}
-		setVisibleSpeech(latestMessage.text)
-		speechTimeoutRef.current = setTimeout(() => {
-			setVisibleSpeech(null)
-			speechTimeoutRef.current = null
-		}, BEE_SPEECH_DURATION_MS)
-	}, [latestMessage?.index])
+		if (lastEnqueuedIndexRef.current !== latestMessage.index) {
+			lastEnqueuedIndexRef.current = latestMessage.index
+			enqueueSpeech(agent.id, latestMessage.text)
+		}
+	}, [latestMessage?.index, agent.id])
+
+	// Subscribe to the global queue to show/hide this bee's bubble
+	const handleQueueUpdate = useCallback(
+		(activeAgentId: string | null, text: string | null) => {
+			if (activeAgentId === agent.id) {
+				setVisibleSpeech(text)
+			} else {
+				setVisibleSpeech(null)
+			}
+		},
+		[agent.id]
+	)
 
 	useEffect(() => {
-		return () => {
-			if (speechTimeoutRef.current) {
-				clearTimeout(speechTimeoutRef.current)
-			}
-		}
-	}, [])
+		return subscribe(handleQueueUpdate)
+	}, [handleQueueUpdate])
+
 
 	useEffect(() => {
 		window.addEventListener('mouseup', clearPointerInteraction)
